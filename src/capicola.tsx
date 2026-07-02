@@ -11,6 +11,12 @@ import type {
   WordTiming,
 } from "./types"
 
+// useLayoutEffect logs a warning when run on the server (Next.js SSR/RSC). The
+// caption only renders on the client, but this shim keeps the console clean for
+// apps that import the component into a server-rendered tree.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect
+
 // ─── style presets (CapCut-style templates) ──────────────────────────────────
 // Each is a full bundle of CaptionTheme tokens tuned to its reference sample;
 // `appearance` merges on top. Tokens are orthogonal, so combining a preset with
@@ -347,7 +353,7 @@ export function Capicola({
     }
   }, [mergedTheme.fontFamily, mergedTheme.fontWeight])
 
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!open || resolvedBoxWidth === undefined) return
     const row = measureRowRef.current
     if (!row) return
@@ -371,7 +377,7 @@ export function Capicola({
   // ── Caption size (for `auto` collision flipping) ────────────────────────────
   const rootElRef = React.useRef<HTMLDivElement | null>(null)
   const [captionHeight, setCaptionHeight] = React.useState(0)
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!open) return
     const el = rootElRef.current
     if (el) setCaptionHeight(el.getBoundingClientRect().height)

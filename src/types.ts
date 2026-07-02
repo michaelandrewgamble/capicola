@@ -46,7 +46,7 @@ export interface CadenceOptions {
   style?: "reading" | "speech"
 
   // ── reading model ──
-  /** Characters per second (the subtitle/comprehension metric). ~15 comfy, ~25 fast. Default 18. */
+  /** Characters per second (the subtitle/comprehension metric). ~15 comfy, ~25 fast. Default 15. */
   cps?: number
   /** Per-word floor, seconds — keeps a highlight trackable (not a subliminal flick). Default 0.2. */
   minWordDuration?: number
@@ -54,9 +54,9 @@ export interface CadenceOptions {
   maxWordDuration?: number
 
   // ── pauses (both models) ──
-  /** Extra dwell after a comma/semicolon/colon, seconds. Default 0.18. */
+  /** Extra dwell after a comma/semicolon/colon, seconds. The highlight clears during the beat. Default 0.8. */
   commaPause?: number
-  /** Extra dwell after a sentence ender (. ! ?), seconds. Default 0.35. */
+  /** Extra dwell after a sentence ender (. ! ?), seconds. The highlight clears during the beat. Default 0.8. */
   sentencePause?: number
 
   // ── speech model only ──
@@ -140,7 +140,9 @@ export interface CaptionTheme {
 
   // ── Stroke / outline  (CapCut: Stroke → color + thickness)
   strokeColor?: string
-  /** Outline thickness, px. Rendered as a layered round-jointed text-shadow, NOT -webkit-text-stroke. */
+  /** Outline thickness, px. Rendered with `-webkit-text-stroke` + `paint-order: stroke fill` (a real
+   *  vector stroke drawn behind the fill), so letters keep full weight. The stroke width is internally
+   *  doubled because paint-order only reveals the outer half. */
   strokeWidthPx?: number
 
   // ── Drop shadow  (CapCut: Shadow → color + opacity + blur + distance + angle)

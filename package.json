@@ -33,9 +33,11 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
     },
-    "./styles.css": "./dist/capicola.css"
+    "./styles.css": "./dist/capicola.css",
+    "./package.json": "./package.json"
   },
   "sideEffects": [
     "**/*.css"
@@ -48,8 +50,7 @@
     "scripts/caption.mjs",
     "scripts/README.md",
     "README.md",
-    "LICENSE",
-    "capicola-logo.png"
+    "LICENSE"
   ],
   "engines": {
     "node": ">=18"
@@ -59,6 +60,8 @@
     "build": "tsup && cp src/capicola.css dist/capicola.css",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
     "lint": "eslint src",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
@@ -85,9 +88,11 @@
     "@eslint/js": "^9",
     "typescript-eslint": "^8",
     "eslint-plugin-react-hooks": "^5",
-    "prettier": "^3"
+    "prettier": "^3",
+    "vitest": "^3"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }

@@ -259,7 +259,6 @@ export function useAudioWordSync({
       audio.removeEventListener("seeked", handleSeeked)
     }
     // audioRef is a stable RefObject; tick and cancelRaf are stable callbacks.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioRef, cancelRaf, tick])
 
   // ── cleanup when open becomes false, or on unmount ───────────────────────────

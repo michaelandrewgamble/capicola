@@ -1,25 +1,29 @@
-<p align="center"><img src="./capicola-logo.png" width="180" alt="Capicola" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/capicola-logo.png" width="180" alt="Capicola" /></p>
 
 <h1 align="center">Capicola</h1>
 
 <p align="center">TikTok/CapCut-style narrated captions that sweep a highlight word-by-word, pinned to any element.</p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/capicola"><img src="https://img.shields.io/npm/v/capicola.svg?color=E62E64" alt="npm version" /></a>
-  <a href="https://www.npmjs.com/package/capicola"><img src="https://img.shields.io/npm/dm/capicola.svg?color=E62E64" alt="npm downloads" /></a>
-  <a href="https://bundlephobia.com/package/capicola"><img src="https://img.shields.io/bundlephobia/minzip/capicola.svg?color=E62E64" alt="minzipped size" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/capicola.svg?color=E62E64" alt="MIT license" /></a>
-  <img src="https://img.shields.io/npm/types/capicola.svg?color=E62E64" alt="types included" />
+  <a href="https://michaelandrewgamble.github.io/capicola/"><img src="https://img.shields.io/badge/demo-Storybook-E62E64?logo=storybook&logoColor=white" alt="Live Storybook demo" /></a>
+  <a href="https://github.com/michaelandrewgamble/capicola/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/michaelandrewgamble/capicola/ci.yml?branch=main&label=CI&color=E62E64" alt="CI status" /></a>
+  <a href="https://github.com/michaelandrewgamble/capicola/releases"><img src="https://img.shields.io/github/v/release/michaelandrewgamble/capicola?color=E62E64" alt="Latest release" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/michaelandrewgamble/capicola?color=E62E64" alt="MIT license" /></a>
+  <img src="https://img.shields.io/badge/types-included-E62E64?logo=typescript&logoColor=white" alt="TypeScript types included" />
+  <img src="https://img.shields.io/badge/deps-react%20%2B%20react--dom-E62E64" alt="Zero runtime dependencies beyond React" />
 </p>
+
+<!-- Once published to npm, add the version / bundle-size badges back:
+  <a href="https://www.npmjs.com/package/capicola"><img src="https://img.shields.io/npm/v/capicola.svg?color=E62E64" alt="npm version" /></a>
+  <a href="https://bundlephobia.com/package/capicola"><img src="https://img.shields.io/bundlephobia/minzip/capicola.svg?color=E62E64" alt="minzipped size" /></a>
+-->
+
 
 ---
 
 **Capicola** is a self-contained React component that renders a narrated, word-by-word caption — the animated karaoke style you see on TikTok and CapCut — and pins it to any anchor element on the page. Feed it plain text and it paces the highlight itself with a research-tuned cadence model; feed it word-level timings plus an audio file and the highlight rides the narration exactly. It ships four ready-made presets, is fully themeable through typed tokens or raw CSS variables, and depends on nothing but React and `react-dom`.
 
-<!-- TODO: add DEMO GIF — the four presets flipping (box → color → bubble → plain) on the same line.
-     Record at 2× device pixel ratio, keep it under ~4 MB, and drop it here:
-<p align="center"><img src="./docs/demo.gif" width="640" alt="Capicola presets" /></p>
--->
+<p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/demo.gif" width="720" alt="Capicola cycling through its box, color, bubble, and plain presets" /></p>
 
 ## Features
 
@@ -170,11 +174,11 @@ Provide **either** `text` (cadence mode) **or** `words` + `audioSrc` (audio mode
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `style` | `"reading" \| "speech"` | `"reading"` | Pacing model. `reading` is char-proportional (subtitle CPS, tuned for comprehension); `speech` is a prosody model that sounds like speech. |
-| `cps` | `number` | `18` | Characters per second (reading model). ~15 comfortable, ~25 fast. |
+| `cps` | `number` | `15` | Characters per second (reading model). ~15 comfortable, ~25 fast. |
 | `minWordDuration` | `number` | `0.2` | Per-word floor, seconds — keeps a highlight trackable. |
 | `maxWordDuration` | `number` | `0.7` | Per-word ceiling, seconds — long words don't stall. |
-| `commaPause` | `number` | `0.18` | Extra dwell after a comma / semicolon / colon, seconds (both models). |
-| `sentencePause` | `number` | `0.35` | Extra dwell after a sentence ender (`.` `!` `?`), seconds (both models). |
+| `commaPause` | `number` | `0.8` | Extra dwell after a comma / semicolon / colon, seconds (both models). The highlight clears during the beat. |
+| `sentencePause` | `number` | `0.8` | Extra dwell after a sentence ender (`.` `!` `?`), seconds (both models). The highlight clears during the beat. |
 | `rate` | `number` | `165` | Approximate words-per-minute baseline (speech model). |
 | `perSyllable` | `number` | `0.05` | Seconds added per syllable beyond the first (speech model). |
 | `functionWordScale` | `number` | `0.62` | Multiplier for unstressed function words (speech model). |
@@ -330,11 +334,17 @@ Issues and PRs are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) to get star
 
 ## Links
 
+- **Live demo / Storybook** — [michaelandrewgamble.github.io/capicola](https://michaelandrewgamble.github.io/capicola/)
 - **Changelog** — [CHANGELOG.md](./CHANGELOG.md)
-- **License** — [MIT](./LICENSE) © Michael Gamble
-- **Demo / Storybook** — <!-- TODO: publish the Storybook and link it here -->
+- **Contributing** — [CONTRIBUTING.md](./CONTRIBUTING.md)
+- **Security policy** — [SECURITY.md](./SECURITY.md)
 
-<!-- TODO: add EXPANDED-CONFIG screenshot — a caption with the full appearance panel open,
-     showing tokens mapped to the rendered result. Suggested:
-<p align="center"><img src="./docs/expanded-config.png" width="720" alt="Capicola appearance tokens" /></p>
--->
+## License
+
+[MIT](./LICENSE) © Michael Gamble
+
+## Themeable to the token
+
+Set a `preset`, then override any individual token through the typed `appearance` prop (or raw `--cap-*` CSS variables). Every token maps 1:1 to a CSS custom property.
+
+<p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/expanded-config.png" width="820" alt="A Capicola appearance config and the caption it renders, side by side" /></p>
