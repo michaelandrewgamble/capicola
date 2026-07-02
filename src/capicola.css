@@ -1,0 +1,227 @@
+/*
+ * Capicola — caption styles
+ *
+ * All tuneable values are exposed as --cap-* custom properties.
+ * Defaults reproduce the "tiktok-pink" preset from design-spec.md.
+ *
+ * ANTI-JITTER contract (hard requirement):
+ *   • Every word always occupies highlight padding + gap → paint change only.
+ *   • Active-word pop is transform:scale() on a compositor layer; never
+ *     animates font-size, font-weight, padding, or letter-spacing.
+ *   • prefers-reduced-motion disables pop and scroll animation.
+ */
+
+/* ─── default theme (tiktok-pink preset) + root container ───────────────────── */
+
+.cap-root {
+  /* Font */
+  --cap-font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --cap-font-weight: 900; /* Barlow Condensed imports 400/600/700/900 — 900 avoids faux-bold + matches the heavy reference */
+  --cap-font-size: 30px;
+  --cap-letter-spacing: 0.02em;
+  --cap-text-transform: uppercase;
+  --cap-text-color: #ffffff;
+
+  /* Stroke — layered 8-direction text-shadow, round-jointed */
+  --cap-stroke-color: #000000;
+  --cap-stroke-width: 3px;
+
+  /* Drop shadow — offset/blur must exceed the stroke width or it hides behind it. */
+  --cap-shadow-color: rgba(0, 0, 0, 0.55);
+  --cap-shadow-blur: 5px;
+  --cap-shadow-offset-x: 0px;
+  --cap-shadow-offset-y: 4px;
+
+  /* Active-word highlight box (drawn as a ::before that extends beyond the text,
+     so the box padding doesn't inflate word-to-word spacing) */
+  --cap-highlight-color: linear-gradient(180deg, #E62E64 0%, #C4124C 100%);
+  --cap-highlight-text-color: #ffffff;
+  --cap-highlight-padding-x: 8px;
+  --cap-highlight-padding-y: 3px;
+  --cap-highlight-radius: 8px;
+  --cap-highlight-opacity: 1;
+
+  /* Line background / "bubble" — default none (padding 0 so it adds no space) */
+  --cap-background-color: transparent;
+  --cap-background-padding-x: 0px;
+  --cap-background-padding-y: 0px;
+  --cap-background-radius: 0px;
+
+  /* Word gap — the real typographic space between words (box no longer counts) */
+  --cap-word-gap: 0.62em;
+
+  /* Active-word pop — compositor-only transform. Default 1 = static (matches the
+     reference); bump >1 for a squishy karaoke pop. */
+  --cap-pop-scale: 1;
+  /* Snappy ease-out for reveals/state changes (fast start, gentle settle). */
+  --cap-pop-duration: 150ms;
+  --cap-pop-easing: ease-out;
+
+  /* Window scroll transition */
+  --cap-scroll-duration: 150ms;
+  --cap-scroll-easing: ease-out;
+
+  /* Overlay caption: no chrome of its own (rendered via createPortal into
+     document.body — kill the focus outline + any inherited box). */
+  background: transparent;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center; /* overridden inline by `align`; matters when box > content */
+  position: relative; /* contains the absolute measuring row */
+  /* Never clip — edge words' highlight boxes, stroke, and shadow must stay whole.
+     A fixed/parent box that's narrower than a page lets content spill rather than
+     cut a word in half. */
+  overflow: visible;
+  /* Pixel-snap the container */
+  transform: translateZ(0);
+  /* Pointer events off — it's a caption overlay */
+  pointer-events: none;
+  user-select: none;
+  /* Clip the rolling window */
+  white-space: nowrap;
+}
+
+/* ─── page (chunk) — a fixed group of words; highlight sweeps across it ──────── */
+
+.cap-track {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--cap-word-gap);
+  white-space: nowrap;
+  /* Line background / bubble (default transparent + 0 padding = no effect) */
+  background: var(--cap-background-color);
+  padding: var(--cap-background-padding-y) var(--cap-background-padding-x);
+  border-radius: var(--cap-background-radius);
+  /* Pixel snap */
+  transform: translateZ(0);
+  /* New page fades in (track is keyed on chunk index → remounts per page).
+     Within a page nothing reflows — the highlight is a paint+scale change. */
+  animation: cap-page-in var(--cap-scroll-duration) var(--cap-scroll-easing);
+}
+
+@keyframes cap-page-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Hidden measuring row (width mode): full word styling, out of flow, so we can
+   read real per-word widths for width-fit packing without affecting layout. */
+.cap-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cap-track {
+    animation: none;
+  }
+}
+
+/* ─── individual word ────────────────────────────────────────────────────────── */
+
+.cap-word {
+  /*
+   * Layout footprint = the TEXT ONLY. The highlight box is a ::before pseudo
+   * that extends BEYOND the text via negative inset, so it (a) doesn't push
+   * neighbors apart → correct word spacing, and (b) is out of flow → no reflow
+   * when it appears (anti-jitter).
+   */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Typography */
+  font-family: var(--cap-font-family);
+  font-weight: var(--cap-font-weight);
+  font-size: var(--cap-font-size);
+  letter-spacing: var(--cap-letter-spacing);
+  text-transform: var(--cap-text-transform);
+  color: var(--cap-text-color);
+  /* Roomy enough that tall caps + the stroke + drop shadow don't clip vertically. */
+  line-height: 1.25;
+
+  /*
+   * Outline via a real vector stroke (-webkit-text-stroke), NOT stacked
+   * text-shadows — the layered approach spikes at sharp corners (e.g. the apex
+   * of an "A"). paint-order: stroke fill draws the stroke first and the fill on
+   * top, so the letter keeps full weight and the visible stroke sits outside.
+   * The stroke width is doubled because paint-order only leaves the outer half.
+   * text-shadow is now ONLY the soft drop shadow.
+   */
+  -webkit-text-stroke-width: calc(var(--cap-stroke-width) * 2);
+  -webkit-text-stroke-color: var(--cap-stroke-color);
+  paint-order: stroke fill;
+  text-shadow: var(--cap-shadow-offset-x) var(--cap-shadow-offset-y)
+    var(--cap-shadow-blur) var(--cap-shadow-color);
+
+  /* Smooth the active-word colour change (e.g. the "color" preset). */
+  transition: color var(--cap-pop-duration) var(--cap-pop-easing);
+
+  /* NOTE: no transform on the word itself — a transform here would create a
+     per-word stacking context that traps the ::before box inside the word, so
+     the active box would paint OVER the neighbouring word. The pop lives on the
+     box pseudo instead (below), which stays a negative-z layer behind all text. */
+}
+
+/*
+ * The highlight box. z-index:-1 keeps it on a negative layer of the TRACK's
+ * stacking context — i.e. behind EVERY word's text, not just its own. The pop
+ * scale lives here (a transformed negative-z element is still negative-z), so the
+ * box can grow on the active word and remain behind all the words.
+ */
+.cap-word::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--cap-highlight-padding-y) * -1) calc(var(--cap-highlight-padding-x) * -1);
+  border-radius: var(--cap-highlight-radius);
+  /* The fill (gradient OR alpha color) is ALWAYS painted; we show/hide it via
+     opacity. Transitioning `background` to/from transparent — or between a color
+     and a gradient — is not interpolable and flickers; opacity is smooth + GPU-
+     stable. */
+  background: var(--cap-highlight-color);
+  opacity: 0;
+  z-index: -1;
+  transform: scale(1);
+  transform-origin: center center;
+  transition:
+    opacity var(--cap-pop-duration) var(--cap-pop-easing),
+    transform var(--cap-pop-duration) var(--cap-pop-easing);
+}
+
+/* ─── active word ────────────────────────────────────────────────────────────── */
+
+.cap-word[data-active="true"] {
+  color: var(--cap-highlight-text-color);
+}
+
+.cap-word[data-active="true"]::before {
+  opacity: var(--cap-highlight-opacity);
+  transform: scale(var(--cap-pop-scale));
+}
+
+/* ─── reduced motion overrides ──────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .cap-word::before {
+    transition: none;
+  }
+  .cap-word[data-active="true"]::before {
+    /* Hard-cut: no scale pop */
+    transform: scale(1);
+  }
+}

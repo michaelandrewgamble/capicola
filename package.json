@@ -1,0 +1,91 @@
+{
+  "name": "capicola",
+  "version": "0.1.0",
+  "description": "A TikTok/CapCut-style narrated, word-by-word caption component for React, pinned to an anchor element.",
+  "type": "module",
+  "author": "Michael Gamble",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/michaelandrewgamble/capicola.git"
+  },
+  "homepage": "https://github.com/michaelandrewgamble/capicola",
+  "bugs": {
+    "url": "https://github.com/michaelandrewgamble/capicola/issues"
+  },
+  "keywords": [
+    "react",
+    "captions",
+    "subtitles",
+    "tiktok",
+    "capcut",
+    "karaoke",
+    "caption-animation",
+    "video",
+    "word-highlight",
+    "typescript",
+    "component"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/capicola.css"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "bin": {
+    "capicola-caption": "scripts/caption.mjs"
+  },
+  "files": [
+    "dist",
+    "scripts/caption.mjs",
+    "scripts/README.md",
+    "README.md",
+    "LICENSE",
+    "capicola-logo.png"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup && cp src/capicola.css dist/capicola.css",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "format": "prettier --write .",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "prepublishOnly": "pnpm run build"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "tsup": "^8",
+    "react": "^19",
+    "react-dom": "^19",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "storybook": "^10",
+    "@storybook/react-vite": "^10",
+    "@storybook/addon-docs": "^10",
+    "@vitejs/plugin-react": "^5",
+    "eslint": "^9",
+    "@eslint/js": "^9",
+    "typescript-eslint": "^8",
+    "eslint-plugin-react-hooks": "^5",
+    "prettier": "^3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
