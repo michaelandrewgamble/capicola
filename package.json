@@ -54,6 +54,7 @@
   "engines": {
     "node": ">=18"
   },
+  "packageManager": "pnpm@10.27.0",
   "scripts": {
     "build": "tsup && cp src/capicola.css dist/capicola.css",
     "dev": "tsup --watch",
@@ -62,6 +63,7 @@
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
+    "prepare": "pnpm run build",
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {

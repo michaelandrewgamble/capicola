@@ -43,7 +43,11 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Publishes only when an NPM_TOKEN secret is configured. Until then the
+      # release still tags + creates a GitHub Release; add the secret to enable
+      # automatic npm publishing on the next tag.
       - name: Publish to npm
+        if: ${{ secrets.NPM_TOKEN != '' }}
         run: pnpm publish --no-git-checks --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
