@@ -20,19 +20,21 @@
 
 ---
 
-**Capicola** renders a narrated, word-by-word caption — the animated karaoke style you see on TikTok and CapCut — and pins it to any anchor element (or lays it out inline). Feed it plain text and it paces the highlight itself with a research-tuned cadence model; feed it word-level timings plus an audio file and the highlight rides the narration exactly. It ships four ready-made presets and is fully themeable through typed tokens or raw CSS variables. At its core it's a **framework-agnostic engine** (`createCapicola`) with **zero runtime dependencies**; a React component (`capicola/react`) and a web component (`capicola/web-component`) are thin adapters on top.
+**Capicola** renders a narrated, word-by-word caption — the animated karaoke style you see on TikTok and CapCut — and pins it to any anchor element (or lays it out inline). Feed it plain text and it paces the highlight itself with a research-tuned cadence model; feed it word-level timings plus an audio file and the highlight rides the narration exactly. It ships four ready-made presets, a featured-**quote mode**, and is fully themeable through typed tokens or raw CSS variables. At its core it's a **framework-agnostic engine** (`createCapicola`) with **zero runtime dependencies**; a React component (`capicola/react`) and a web component (`capicola/web-component`) are thin adapters on top.
 
-<p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/demo.gif" width="720" alt="Capicola cycling through its box, color, bubble, and plain presets" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/demo.gif" width="720" alt="Capicola cycling through its box, color, and bubble caption presets, then a featured-quote reel" /></p>
 
-## Themeable to the token
+## Table of contents
 
-Set a `preset`, then override any individual token through the typed `appearance` prop (or raw `--cap-*` CSS variables). Every token maps 1:1 to a CSS custom property — so a config reads exactly like the result it produces.
-
-<p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/expanded-config.png" width="820" alt="A Capicola appearance config and the caption it renders, side by side" /></p>
-
-Every prop and token is a live control in the [Storybook playground](https://michaelandrewgamble.github.io/capicola/?path=/story/components-capicola--playground) — a live preview with a searchable Google-font picker up top, then presets, per-color opacity, stroke/shadow, chunking, layout, and cadence:
-
-<p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/config-options.png" width="560" alt="The full set of Capicola configuration options as live Storybook controls" /></p>
+- [Features](#features)
+- [Install](#install)
+- [Quickstart (React)](#quickstart-react)
+- [Framework-agnostic engine](#framework-agnostic-engine-createcapicola) · [Web component](#web-component-capicola-caption)
+- [Presets](#presets) · [Placement](#placement) · [Quote mode](#quote-mode) · [Theming](#theming)
+- [How it works](#how-it-works)
+- [API reference](#api-reference)
+- [Caption CLI](#caption-cli) · [Fonts](#fonts) · [SSR & Next.js](#ssr--nextjs) · [Browser support](#browser-support)
+- [Bundle size & tree-shaking](#bundle-size--tree-shaking) · [Stability](#stability) · [Contributing](#contributing)
 
 ## Features
 
@@ -40,6 +42,7 @@ Every prop and token is a live control in the [Storybook playground](https://mic
 - **Framework-agnostic core** — a headless `createCapicola(el, opts)` engine with **zero runtime dependencies**; ships React and web-component adapters. No design-system imports, no CSS-in-JS runtime.
 - **Themeable, two ways** — a typed `appearance` prop or raw `--cap-*` CSS custom properties. Every token maps 1:1 to a variable.
 - **Four presets** — `box`, `color`, `bubble`, `plain`, each a full bundle of tokens you can still override.
+- **Featured-quote mode** — turn the same engine into an auto-cycling quote reel with a styled author attribution.
 - **Anti-jitter by design** — the highlight is a paint change over constant padding; the pop is a compositor `transform: scale()`. Nothing reflows per word, ever.
 - **Smart anchoring** — a 3×3 anchor grid plus collision-aware `auto` vertical placement that flips above/below to stay on-screen and tracks the anchor as the page scrolls.
 - **CapCut-style chunking** — group words into on-screen "pages" by pause or by box width, with sentence-aware breaks and a max-lines cap.
@@ -265,7 +268,67 @@ The author attribution has its own theme, `authorAppearance`, with the exact sam
 />
 ```
 
-## Props / API reference
+## Theming
+
+Set a `preset`, then override any individual token through the typed `appearance` prop (or raw `--cap-*` CSS variables). Every token maps 1:1 to a CSS custom property — so a config reads exactly like the result it produces.
+
+<p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/expanded-config.png" width="820" alt="A Capicola appearance config and the caption it renders, side by side" /></p>
+
+There are two equivalent routes; pick whichever fits your codebase. `appearance` is a thin typed wrapper that writes the very same `--cap-*` variables.
+
+**1. The `appearance` prop (typed tokens):**
+
+```tsx
+<Capicola
+  open
+  anchorRef={anchor}
+  text="…"
+  appearance={{
+    fontFamily: "'Anton', sans-serif",
+    fontSizePx: 44,
+    highlightColor: "#111827",
+    highlightTextColor: "#F9FAFB",
+    highlightRadiusPx: 12,
+  }}
+/>
+```
+
+**2. Raw `--cap-*` CSS variables:**
+
+```tsx
+<Capicola open anchorRef={anchor} text="…" className="my-caption" />
+```
+
+```css
+.my-caption {
+  --cap-font-size: 44px;
+  --cap-highlight-color: #111827;
+  --cap-highlight-text-color: #f9fafb;
+  --cap-highlight-radius: 12px;
+}
+```
+
+Precedence is: stylesheet defaults → `preset` → `appearance` (and inline `--cap-*` written by `appearance`) → any `--cap-*` you set via `className`.
+
+Every prop and token is also a live control in the [Storybook playground](https://michaelandrewgamble.github.io/capicola/?path=/story/components-capicola--playground) — a live preview with a searchable Google-font picker up top, then settings, per-color opacity, stroke/shadow, chunking, layout, and cadence:
+
+<p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/config-options.png" width="560" alt="The full set of Capicola configuration options as live Storybook controls" /></p>
+
+## How it works
+
+### Cadence
+
+In cadence mode Capicola derives per-word timings from `text` — no audio required. The **reading** model (default) holds each word for `charCount / cps` seconds, clamped between `minWordDuration` and `maxWordDuration`, so pacing scales directly with the `cps` dial and stays comfortable to read along with. The **speech** model instead uses a prosody model (function-word reduction, phrase-final lengthening) that sounds like spoken narration. Both models add a `commaPause` after commas/semicolons/colons and a longer `sentencePause` after sentence enders, so the highlight breathes at punctuation.
+
+### Chunking
+
+Words are grouped into on-screen "pages" that the highlight sweeps across. `pause` mode (CapCut's behaviour) cuts a new page when the gap between two words exceeds `gapThreshold`, after a sentence-ending word (when `breakOnPunctuation`), or at `maxWords`. `width` mode ignores gaps and greedily packs as many words as fit the resolved box width, wrapping up to `maxLines` before paging. During a punctuation beat (when no word is active) the current page is held rather than snapping back to the first page.
+
+### Anchoring
+
+The caption is portaled to `document.body` and positioned `fixed` against `anchorRef`. `anchorX` (`left`/`center`/`right`) and `anchorY` (`top`/`middle`/`bottom`) form a 3×3 grid — e.g. `top`+`center` sits above and centred, `middle`+`center` overlays the target, `middle`+`left` sits to its left. Edge positions are pushed out by `offset` px. Set `anchorY="auto"` for collision awareness: it prefers above, flips below when there isn't room above in the viewport, and re-evaluates as the page scrolls so the caption stays visible. Position tracks the anchor live via `ResizeObserver` plus scroll/resize listeners.
+
+## API reference
 
 The `<Capicola>` props below are also the engine's options — `createCapicola(el, options)` and `<capicola-caption>` take the same surface, except `anchorRef` (a React ref) becomes **`anchorEl`** (a raw `HTMLElement`).
 
@@ -406,58 +469,6 @@ The quote author is themed separately from the quote body. Every `CaptionTheme` 
 
 The author carries **no** per-word highlight box (the `highlight*` tokens don't apply — the author is never swept). By default it renders a touch smaller and lighter than the quote body — `--cap-author-font-size` is `19px`, `--cap-author-font-weight` is `600`, and `--cap-author-text-transform` is `none` — while colour, stroke, and shadow inherit the corresponding `--cap-*` quote value unless overridden. Set any of these via `authorAppearance` (typed) or raw `--cap-author-*` CSS on `className`.
 
-## Theming
-
-There are two equivalent routes; pick whichever fits your codebase. `appearance` is a thin typed wrapper that writes the very same `--cap-*` variables.
-
-**1. The `appearance` prop (typed tokens):**
-
-```tsx
-<Capicola
-  open
-  anchorRef={anchor}
-  text="…"
-  appearance={{
-    fontFamily: "'Anton', sans-serif",
-    fontSizePx: 44,
-    highlightColor: "#111827",
-    highlightTextColor: "#F9FAFB",
-    highlightRadiusPx: 12,
-  }}
-/>
-```
-
-**2. Raw `--cap-*` CSS variables:**
-
-```tsx
-<Capicola open anchorRef={anchor} text="…" className="my-caption" />
-```
-
-```css
-.my-caption {
-  --cap-font-size: 44px;
-  --cap-highlight-color: #111827;
-  --cap-highlight-text-color: #f9fafb;
-  --cap-highlight-radius: 12px;
-}
-```
-
-Precedence is: stylesheet defaults → `preset` → `appearance` (and inline `--cap-*` written by `appearance`) → any `--cap-*` you set via `className`.
-
-## How it works
-
-### Cadence
-
-In cadence mode Capicola derives per-word timings from `text` — no audio required. The **reading** model (default) holds each word for `charCount / cps` seconds, clamped between `minWordDuration` and `maxWordDuration`, so pacing scales directly with the `cps` dial and stays comfortable to read along with. The **speech** model instead uses a prosody model (function-word reduction, phrase-final lengthening) that sounds like spoken narration. Both models add a `commaPause` after commas/semicolons/colons and a longer `sentencePause` after sentence enders, so the highlight breathes at punctuation.
-
-### Chunking
-
-Words are grouped into on-screen "pages" that the highlight sweeps across. `pause` mode (CapCut's behaviour) cuts a new page when the gap between two words exceeds `gapThreshold`, after a sentence-ending word (when `breakOnPunctuation`), or at `maxWords`. `width` mode ignores gaps and greedily packs as many words as fit the resolved box width, wrapping up to `maxLines` before paging. During a punctuation beat (when no word is active) the current page is held rather than snapping back to the first page.
-
-### Anchoring
-
-The caption is portaled to `document.body` and positioned `fixed` against `anchorRef`. `anchorX` (`left`/`center`/`right`) and `anchorY` (`top`/`middle`/`bottom`) form a 3×3 grid — e.g. `top`+`center` sits above and centred, `middle`+`center` overlays the target, `middle`+`left` sits to its left. Edge positions are pushed out by `offset` px. Set `anchorY="auto"` for collision awareness: it prefers above, flips below when there isn't room above in the viewport, and re-evaluates as the page scrolls so the caption stays visible. Position tracks the anchor live via `ResizeObserver` plus scroll/resize listeners.
-
 ## Caption CLI
 
 The `capicola-caption` CLI generates `*.caption.json` files (matching `CaptionData`) that spread straight into `<Capicola {...caption} />`.
@@ -500,13 +511,13 @@ pnpm add @fontsource/barlow-condensed
 
 Any font works — set `--cap-font-family` or `appearance.fontFamily` (the `color`, `bubble`, and `plain` presets use Inter). Capicola waits for the requested webfont to load before revealing the caption, so there's no flash of the fallback face.
 
-## Browser support
-
-Capicola targets modern evergreen browsers. The outline is rendered with `-webkit-text-stroke` + `paint-order: stroke fill` (Chromium, Safari, and Firefox all support these). Anchored positioning appends into `document.body` with `position: fixed`. Motion respects `prefers-reduced-motion` (the pop and page fade are disabled).
-
 ## SSR & Next.js
 
 Capicola is client-side: it measures the DOM and, for anchored placement, appends into `document.body`, so it only runs on the client (the React wrapper creates the engine in an effect, after hydration). In the **Next.js App Router**, import `capicola/react` from a Client Component (add `"use client"` at the top of that file). No other configuration is needed. The `createCapicola` engine and the `<capicola-caption>` web component are likewise client-only — call/mount them in the browser.
+
+## Browser support
+
+Capicola targets modern evergreen browsers. The outline is rendered with `-webkit-text-stroke` + `paint-order: stroke fill` (Chromium, Safari, and Firefox all support these). Anchored positioning appends into `document.body` with `position: fixed`. Motion respects `prefers-reduced-motion` (the pop and page fade are disabled).
 
 ## Bundle size & tree-shaking
 
