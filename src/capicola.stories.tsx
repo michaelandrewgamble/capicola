@@ -5,7 +5,7 @@ import type { InputType } from "storybook/internal/types"
 // useArgs lets the Playground update its own controls (auto-switch preset → custom
 // when a Style control changes). Provided by Storybook at build time.
 import { useArgs } from "storybook/preview-api"
-import { Capicola } from "./capicola"
+import { Capicola } from "./react"
 import type { CaptionPreset, CaptionTheme, Quote, WordTiming } from "./types"
 
 // Ambient decl: storybook/preview-api resolves at Storybook build time, but not

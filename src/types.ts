@@ -1,5 +1,3 @@
-import type * as React from "react"
-
 /**
  * Capicola — frozen public contract (the "architect's seam").
  *
@@ -234,11 +232,21 @@ export interface QuoteOptions {
   authorSeparator?: string
 }
 
-export interface CapicolaProps {
+// ── Headless engine contract (React-free) ───────────────────────────────────
+
+/**
+ * Options for the framework-agnostic engine `createCapicola(mountEl, opts)`.
+ *
+ * Field-for-field the same surface as `CapicolaProps`, minus React: the anchor is
+ * a raw `HTMLElement` (`anchorEl`) instead of a `RefObject` (`anchorRef`). The React
+ * wrapper adapts `anchorRef.current → anchorEl`. This interface imports no React and
+ * is what the core `.d.ts` exposes.
+ */
+export interface CapicolaOptions {
   /** Mounts + plays when true; resets/hides when false. Default true. */
   open?: boolean
-  /** Element the caption is positioned against. Required (and only used) when `placement="anchored"`. */
-  anchorRef?: React.RefObject<HTMLElement | null>
+  /** Element the caption is positioned against. Only used when `placement="anchored"`. */
+  anchorEl?: HTMLElement | null
 
   // ── Audio mode: provide BOTH audioSrc and words (e.g. from the caption CLI).
   audioSrc?: string
@@ -248,7 +256,7 @@ export interface CapicolaProps {
   text?: string
   cadence?: CadenceOptions
 
-  /** Where the caption renders: overlay anchored to `anchorRef`, or in-flow inline. Default "anchored". */
+  /** Where the caption renders: overlay anchored to `anchorEl`, or in-flow inline. Default "anchored". */
   placement?: CaptionPlacement
   /** What the engine sweeps: the rolling caption, or the featured-quote reel. Default "caption". */
   mode?: CaptionMode
@@ -287,26 +295,14 @@ export interface CapicolaProps {
   className?: string
 }
 
-// ── Timing-hook contract (consumed by the renderer, implemented in parallel) ──
-
-export interface UseAudioWordSyncArgs {
-  open: boolean
-  /** Already-resolved timings (audio mode: props.words; cadence mode: computeCadence(text)). */
-  words: WordTiming[]
-  /**
-   * Audio mode: ref to the <audio> element. When present, activeIndex is driven
-   * from `audio.currentTime`. When absent, a rAF wall-clock drives it (cadence mode).
-   */
-  audioRef?: React.RefObject<HTMLAudioElement | null>
-  onWordChange?: (index: number, word: WordTiming) => void
-  onEnded?: () => void
-}
-
-export interface UseAudioWordSyncResult {
-  /** Index into `words`, or -1 before the first word / when idle. */
-  activeIndex: number
-  isPlaying: boolean
+/**
+ * Imperative handle returned by `createCapicola`. `update` merges a partial set of
+ * options onto the live instance (re-deriving theme/words/observers as needed);
+ * `destroy` tears down every observer/timer/listener/rAF and removes the DOM.
+ */
+export interface CapicolaInstance {
   play: () => void
   pause: () => void
-  reset: () => void
+  update: (opts: Partial<CapicolaOptions>) => void
+  destroy: () => void
 }

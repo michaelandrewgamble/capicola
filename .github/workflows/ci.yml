@@ -64,8 +64,53 @@ jobs:
         if: ${{ matrix.node-version != 18 }}
         run: pnpm build-storybook
 
+  # Prove the core engine + web-component entries typecheck with NO React
+  # present. React is an *optional* peer, so `capicola` and `capicola/web-component`
+  # must compile even when react/react-dom (and their types) are uninstalled.
+  core-react-free:
+    name: Core typechecks with React uninstalled
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Remove React from the workspace
+        run: pnpm remove -D react react-dom @types/react @types/react-dom || true
+
+      - name: Typecheck core + web-component with no React present
+        run: |
+          cat > tsconfig.core.json <<'JSON'
+          {
+            "compilerOptions": {
+              "strict": true,
+              "target": "ES2020",
+              "module": "ESNext",
+              "moduleResolution": "Bundler",
+              "lib": ["DOM", "DOM.Iterable", "ES2020"],
+              "noEmit": true,
+              "skipLibCheck": true,
+              "types": []
+            },
+            "files": ["src/index.ts", "src/web-component.ts", "src/css.d.ts"]
+          }
+          JSON
+          pnpm exec tsc --noEmit -p tsconfig.core.json
+
   # Verify the advertised React 18 peer floor actually typechecks (devDeps pin
-  # React 19, so this overlays the React 18 type packages and runs tsc).
+  # React 19, so this overlays the React 18 type packages and runs tsc). This now
+  # guards the `capicola/react` entry.
   react18-types:
     name: Typecheck against React 18
     runs-on: ubuntu-latest
