@@ -122,7 +122,14 @@ function FontCombobox({
   }
 
   return (
-    <div style={{ width: 260, maxWidth: "100%", fontFamily: "sans-serif" }}>
+    <div
+      style={{
+        width: 260,
+        maxWidth: "100%",
+        fontFamily: "sans-serif",
+        position: "relative",
+      }}
+    >
       <input
         ref={inputRef}
         value={open ? query : value}
@@ -137,15 +144,39 @@ function FontCombobox({
         style={{
           width: "100%",
           boxSizing: "border-box",
-          padding: "7px 12px",
+          padding: "8px 34px 8px 12px",
           borderRadius: 8,
-          border: "1px solid #8883",
-          background: "#1b1b22",
-          color: "#eee",
+          border: "1px solid #d1d5db",
+          background: "#ffffff",
+          color: "#111827",
           fontSize: 13,
           outline: "none",
+          cursor: "pointer",
+          fontFamily: `'${value}', sans-serif`,
         }}
       />
+      {/* Down-chevron affordance (rotates when open). */}
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#6b7280"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+        style={{
+          position: "absolute",
+          right: 11,
+          top: "50%",
+          transform: `translateY(-50%) rotate(${open ? 180 : 0}deg)`,
+          transition: "transform 120ms ease",
+          pointerEvents: "none",
+        }}
+      >
+        <path d="M6 9l6 6 6-6" />
+      </svg>
       {open &&
         rect &&
         typeof document !== "undefined" &&
@@ -157,17 +188,17 @@ function FontCombobox({
               margin: 0,
               padding: 4,
               listStyle: "none",
-              background: "#1b1b22",
-              border: "1px solid #8883",
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
               borderRadius: 8,
               maxHeight: MAX_H,
               overflowY: "auto",
               zIndex: 2147483647,
-              boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+              boxShadow: "0 10px 30px rgba(17,24,39,0.15)",
             }}
           >
             {filtered.length === 0 && (
-              <li style={{ padding: "6px 10px", color: "#888", fontSize: 13 }}>
+              <li style={{ padding: "6px 10px", color: "#9ca3af", fontSize: 13 }}>
                 No fonts found.
               </li>
             )}
@@ -179,12 +210,12 @@ function FontCombobox({
                   setOpen(false)
                 }}
                 style={{
-                  padding: "6px 10px",
+                  padding: "7px 10px",
                   borderRadius: 6,
                   cursor: "pointer",
                   fontSize: 15,
-                  color: o === value ? "#fff" : "#cfd2e6",
-                  background: o === value ? "#e62e6433" : "transparent",
+                  color: o === value ? "#111827" : "#374151",
+                  background: o === value ? "#e62e6418" : "transparent",
                   fontFamily: `'${o}', sans-serif`,
                 }}
               >
@@ -467,6 +498,7 @@ function PlaygroundDemo({
           display: "flex",
           gap: 8,
           alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <CopyButton text={snippet} label="Copy config" />
