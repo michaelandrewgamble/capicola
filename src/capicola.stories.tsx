@@ -6,7 +6,7 @@ import type { InputType } from "storybook/internal/types"
 // when a Style control changes). Provided by Storybook at build time.
 import { useArgs } from "storybook/preview-api"
 import { Capicola } from "./capicola"
-import type { CaptionPreset, CaptionTheme, WordTiming } from "./types"
+import type { CaptionPreset, CaptionTheme, Quote, WordTiming } from "./types"
 
 // Ambient decl: storybook/preview-api resolves at Storybook build time, but not
 // from packages/ui's tsc — this gives it types without a direct dependency.
@@ -90,6 +90,21 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
 
 const SCRIPT =
   "While being evaluated for the role, I shipped the entire design system. There's a bunch more."
+
+// Featured-quote reel fixture (mode="quote"). Short quotes + attributions; the
+// highlight sweeps only the quote words, the author stays static.
+const QUOTES: Quote[] = [
+  {
+    text: "Design is not just what it looks like. Design is how it works.",
+    author: "Steve Jobs",
+  },
+  { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
+  { text: "Make it work, make it right, make it fast.", author: "Kent Beck" },
+  {
+    text: "The details are not the details. They make the design.",
+    author: "Charles Eames",
+  },
+]
 
 // Self-contained searchable combobox (React + inline styles, no design-system deps)
 // so the story stays portable when Capicola is extracted to its own repo.
@@ -292,11 +307,15 @@ function loadGoogleFonts() {
 type LoopProps = Omit<React.ComponentProps<typeof Capicola>, "open" | "onEnded">
 function LoopCallout(props: LoopProps) {
   const [open, setOpen] = React.useState(true)
+  // Quote mode self-cycles (the sequencer loops through `quotes`), so it only
+  // needs the manual close/re-open trick in caption mode.
+  const isQuote = props.mode === "quote"
   return (
     <Capicola
       {...props}
       open={open}
       onEnded={() => {
+        if (isQuote) return
         setOpen(false)
         window.setTimeout(() => setOpen(true), 500)
       }}
@@ -334,8 +353,8 @@ type Args = {
   cps: number
   commaPause: number
   sentencePause: number
-  // Chunking
-  mode: "pause" | "width"
+  // Chunking  (`chunkMode` avoids colliding with the component's `mode` prop)
+  chunkMode: "pause" | "width"
   maxWords: number
   maxLines: number
   gapThreshold: number
@@ -345,6 +364,17 @@ type Args = {
   anchorY: "top" | "middle" | "bottom" | "auto"
   width: "auto" | "parent" | number
   align: "left" | "center" | "right"
+  // Quote  (mode="quote" reel + placement axis + author styling)
+  // NB: `quoteMode`/`quotePlacement` keys avoid colliding with the chunking `mode`
+  //     arg; the argTypes `name` labels display them as "mode"/"placement".
+  quoteMode: "caption" | "quote"
+  quotePlacement: "anchored" | "inline"
+  authorPauseMs: number
+  loop: boolean
+  authorFontFamily: string
+  authorFontWeight: number
+  authorColor: string
+  authorFontSizePx: number
 }
 
 /** Apply an opacity (0–1) to any CSS color → rgba, so color + opacity stay separate
@@ -399,6 +429,17 @@ function buildAppearance(a: Args): CaptionTheme {
   }
 }
 
+// Author attribution styling for mode="quote" — mirrors buildAppearance but maps
+// the author-specific controls (mapped to the parallel --cap-author-* vars).
+function buildAuthorAppearance(a: Args): CaptionTheme {
+  return {
+    fontFamily: `'${a.authorFontFamily}', sans-serif`,
+    fontWeight: a.authorFontWeight,
+    fontSizePx: a.authorFontSizePx,
+    textColor: a.authorColor,
+  }
+}
+
 const fmt = (v: unknown) => (typeof v === "string" ? `'${v}'` : String(v))
 const inline = (o: Record<string, unknown>) =>
   `{ ${Object.entries(o)
@@ -413,7 +454,7 @@ function usageSnippet(a: Args): string {
     sentencePause: a.sentencePause,
   }
   const chunking = {
-    mode: a.mode,
+    mode: a.chunkMode,
     maxWords: a.maxWords,
     maxLines: a.maxLines,
     gapThreshold: a.gapThreshold,
@@ -466,6 +507,11 @@ function PlaygroundDemo({
           <LoopCallout
             anchorRef={anchorRef as React.RefObject<HTMLElement | null>}
             text={SCRIPT}
+            mode={a.quoteMode}
+            placement={a.quotePlacement}
+            quotes={QUOTES}
+            quote={{ authorPauseMs: a.authorPauseMs, loop: a.loop }}
+            authorAppearance={buildAuthorAppearance(a)}
             anchorX={a.anchorX}
             anchorY={a.anchorY}
             width={a.width}
@@ -477,7 +523,7 @@ function PlaygroundDemo({
               sentencePause: a.sentencePause,
             }}
             chunking={{
-              mode: a.mode,
+              mode: a.chunkMode,
               maxWords: a.maxWords,
               maxLines: a.maxLines,
               gapThreshold: a.gapThreshold,
@@ -604,212 +650,261 @@ type Story = StoryObj<typeof Capicola>
 export const Playground: StoryObj<
   Args & Partial<Omit<React.ComponentProps<typeof Capicola>, keyof Args>>
 > = {
-    name: "Playground",
-    parameters: { controls: { sort: "none" } },
-    args: {
-      preset: "box",
-      fontFamily: "Barlow Condensed",
-      fontWeight: 900,
-      fontSizePx: 30,
-      textColor: "#ffffff",
-      fontOpacity: 1,
-      strokeColor: "#000000",
-      strokeWidthPx: 3,
-      strokeOpacity: 0.95,
-      shadowColor: "#000000",
-      shadowBlurPx: 5,
-      shadowDistancePx: 4,
-      shadowOpacity: 0.55,
-      wordBoxColor: "#e62e64",
-      wordBoxOpacity: 1,
-      backgroundOn: false,
-      backgroundColor: "#000000",
-      backgroundOpacity: 0.6,
-      letterSpacingEm: 0.02,
-      wordGapEm: 0.62,
-      mode: "pause",
-      maxWords: 4,
-      maxLines: 2,
-      gapThreshold: 0.5,
-      breakOnPunctuation: true,
-      anchorX: "center",
-      anchorY: "top",
-      width: "auto",
-      align: "center",
-      style: "reading",
-      cps: 15,
-      commaPause: 0.8,
-      sentencePause: 0.8,
+  name: "Playground",
+  parameters: { controls: { sort: "none" } },
+  args: {
+    preset: "box",
+    fontFamily: "Barlow Condensed",
+    fontWeight: 900,
+    fontSizePx: 30,
+    textColor: "#ffffff",
+    fontOpacity: 1,
+    strokeColor: "#000000",
+    strokeWidthPx: 3,
+    strokeOpacity: 0.95,
+    shadowColor: "#000000",
+    shadowBlurPx: 5,
+    shadowDistancePx: 4,
+    shadowOpacity: 0.55,
+    wordBoxColor: "#e62e64",
+    wordBoxOpacity: 1,
+    backgroundOn: false,
+    backgroundColor: "#000000",
+    backgroundOpacity: 0.6,
+    letterSpacingEm: 0.02,
+    wordGapEm: 0.62,
+    chunkMode: "pause",
+    maxWords: 4,
+    maxLines: 2,
+    gapThreshold: 0.5,
+    breakOnPunctuation: true,
+    anchorX: "center",
+    anchorY: "top",
+    width: "auto",
+    align: "center",
+    style: "reading",
+    cps: 15,
+    commaPause: 0.8,
+    sentencePause: 0.8,
+    quoteMode: "caption",
+    quotePlacement: "anchored",
+    authorPauseMs: 1600,
+    loop: true,
+    authorFontFamily: "Inter",
+    authorFontWeight: 600,
+    authorColor: "#ffffff",
+    authorFontSizePx: 18,
+  },
+  argTypes: {
+    // Preset (first) — pick a look, or "custom" to hand-tune with the Style controls.
+    preset: {
+      control: "select",
+      options: ["box", "color", "bubble", "plain", "custom"],
+      ...cat("Preset"),
     },
-    argTypes: {
-      // Preset (first) — pick a look, or "custom" to hand-tune with the Style controls.
-      preset: {
-        control: "select",
-        options: ["box", "color", "bubble", "plain", "custom"],
-        ...cat("Preset"),
-      },
-      // Style — only applied when preset is "custom".
-      // font is chosen via the type-search combobox in the canvas (not a Storybook control)
-      fontFamily: { table: { disable: true } },
-      fontWeight: styleArg("font weight", {
-        type: "range",
-        min: 300,
-        max: 900,
-        step: 100,
-      }),
-      fontSizePx: styleArg("font size", { type: "range", min: 14, max: 64, step: 1 }),
-      textColor: styleArg("font color", "color"),
-      fontOpacity: styleArg("font opacity", {
-        type: "range",
-        min: 0,
-        max: 1,
-        step: 0.05,
-      }),
-      strokeColor: styleArg("stroke color", "color"),
-      strokeWidthPx: styleArg("stroke size", {
-        type: "range",
-        min: 0,
-        max: 8,
-        step: 0.5,
-      }),
-      strokeOpacity: styleArg("stroke opacity", {
-        type: "range",
-        min: 0,
-        max: 1,
-        step: 0.05,
-      }),
-      shadowColor: styleArg("shadow color", "color"),
-      shadowBlurPx: styleArg("shadow blur", { type: "range", min: 0, max: 24, step: 1 }),
-      shadowDistancePx: styleArg("shadow distance", {
-        type: "range",
-        min: 0,
-        max: 24,
-        step: 1,
-      }),
-      shadowOpacity: styleArg("shadow opacity", {
-        type: "range",
-        min: 0,
-        max: 1,
-        step: 0.05,
-      }),
-      wordBoxColor: styleArg("word box color", "color"),
-      wordBoxOpacity: styleArg("word box opacity", {
-        type: "range",
-        min: 0,
-        max: 1,
-        step: 0.05,
-      }),
-      backgroundOn: styleArg("background box", "boolean"),
-      backgroundColor: styleArg("background color", "color"),
-      backgroundOpacity: styleArg("background opacity", {
-        type: "range",
-        min: 0,
-        max: 1,
-        step: 0.05,
-      }),
-      letterSpacingEm: styleArg("letter spacing", {
-        type: "range",
-        min: -0.02,
-        max: 0.12,
-        step: 0.005,
-      }),
-      wordGapEm: styleArg("word gap", { type: "range", min: 0, max: 1, step: 0.02 }),
-      // Chunking
-      mode: { control: "inline-radio", options: ["pause", "width"], ...cat("Chunking") },
-      maxWords: {
-        control: { type: "range", min: 1, max: 10, step: 1 },
-        ...cat("Chunking"),
-      },
-      maxLines: {
-        control: { type: "range", min: 1, max: 3, step: 1 },
-        ...cat("Chunking"),
-      },
-      gapThreshold: {
-        control: { type: "range", min: 0.1, max: 1.5, step: 0.05 },
-        ...cat("Chunking"),
-      },
-      breakOnPunctuation: { control: "boolean", ...cat("Chunking") },
-      // Layout
-      anchorX: {
-        control: "inline-radio",
-        options: ["left", "center", "right"],
-        ...cat("Layout"),
-      },
-      anchorY: {
-        control: "inline-radio",
-        options: ["top", "middle", "bottom", "auto"],
-        ...cat("Layout"),
-      },
-      width: {
-        control: "select",
-        options: ["auto", "parent", 280, 420],
-        ...cat("Layout"),
-      },
-      align: {
-        control: "inline-radio",
-        options: ["left", "center", "right"],
-        ...cat("Layout"),
-      },
-      // Cadence (last)
-      style: {
-        control: "inline-radio",
-        options: ["reading", "speech"],
-        ...cat("Cadence"),
-      },
-      cps: { control: { type: "range", min: 10, max: 30, step: 1 }, ...cat("Cadence") },
-      commaPause: {
-        control: { type: "range", min: 0, max: 1.2, step: 0.02 },
-        ...cat("Cadence"),
-      },
-      sentencePause: {
-        control: { type: "range", min: 0, max: 1.5, step: 0.05 },
-        ...cat("Cadence"),
-      },
-      // Real component props — pushed to a group at the bottom, no dead controls.
-      open: apiProp(),
-      anchorRef: apiProp(),
-      audioSrc: apiProp(),
-      words: apiProp(),
-      text: apiProp(),
-      cadence: apiProp(),
-      chunking: apiProp(),
-      offset: apiProp(),
-      appearance: apiProp(),
-      onWordChange: apiProp(),
-      onEnded: apiProp(),
-      className: apiProp(),
+    // Style — only applied when preset is "custom".
+    // font is chosen via the type-search combobox in the canvas (not a Storybook control)
+    fontFamily: { table: { disable: true } },
+    fontWeight: styleArg("font weight", {
+      type: "range",
+      min: 300,
+      max: 900,
+      step: 100,
+    }),
+    fontSizePx: styleArg("font size", { type: "range", min: 14, max: 64, step: 1 }),
+    textColor: styleArg("font color", "color"),
+    fontOpacity: styleArg("font opacity", {
+      type: "range",
+      min: 0,
+      max: 1,
+      step: 0.05,
+    }),
+    strokeColor: styleArg("stroke color", "color"),
+    strokeWidthPx: styleArg("stroke size", {
+      type: "range",
+      min: 0,
+      max: 8,
+      step: 0.5,
+    }),
+    strokeOpacity: styleArg("stroke opacity", {
+      type: "range",
+      min: 0,
+      max: 1,
+      step: 0.05,
+    }),
+    shadowColor: styleArg("shadow color", "color"),
+    shadowBlurPx: styleArg("shadow blur", { type: "range", min: 0, max: 24, step: 1 }),
+    shadowDistancePx: styleArg("shadow distance", {
+      type: "range",
+      min: 0,
+      max: 24,
+      step: 1,
+    }),
+    shadowOpacity: styleArg("shadow opacity", {
+      type: "range",
+      min: 0,
+      max: 1,
+      step: 0.05,
+    }),
+    wordBoxColor: styleArg("word box color", "color"),
+    wordBoxOpacity: styleArg("word box opacity", {
+      type: "range",
+      min: 0,
+      max: 1,
+      step: 0.05,
+    }),
+    backgroundOn: styleArg("background box", "boolean"),
+    backgroundColor: styleArg("background color", "color"),
+    backgroundOpacity: styleArg("background opacity", {
+      type: "range",
+      min: 0,
+      max: 1,
+      step: 0.05,
+    }),
+    letterSpacingEm: styleArg("letter spacing", {
+      type: "range",
+      min: -0.02,
+      max: 0.12,
+      step: 0.005,
+    }),
+    wordGapEm: styleArg("word gap", { type: "range", min: 0, max: 1, step: 0.02 }),
+    // Chunking
+    chunkMode: {
+      name: "mode",
+      control: "inline-radio",
+      options: ["pause", "width"],
+      ...cat("Chunking"),
     },
-    render: function Render() {
-      const [a, updateArgs] = useArgs<Args>()
-      const prevRef = React.useRef<Args | null>(null)
-      // Set true when WE change the font (preset population), so the resulting arg
-      // change isn't mistaken for a user edit that would flip preset → custom.
-      const skipNextRef = React.useRef(false)
-      React.useEffect(() => {
-        const prev = prevRef.current
-        prevRef.current = a
+    maxWords: {
+      control: { type: "range", min: 1, max: 10, step: 1 },
+      ...cat("Chunking"),
+    },
+    maxLines: {
+      control: { type: "range", min: 1, max: 3, step: 1 },
+      ...cat("Chunking"),
+    },
+    gapThreshold: {
+      control: { type: "range", min: 0.1, max: 1.5, step: 0.05 },
+      ...cat("Chunking"),
+    },
+    breakOnPunctuation: { control: "boolean", ...cat("Chunking") },
+    // Layout
+    anchorX: {
+      control: "inline-radio",
+      options: ["left", "center", "right"],
+      ...cat("Layout"),
+    },
+    anchorY: {
+      control: "inline-radio",
+      options: ["top", "middle", "bottom", "auto"],
+      ...cat("Layout"),
+    },
+    width: {
+      control: "select",
+      options: ["auto", "parent", 280, 420],
+      ...cat("Layout"),
+    },
+    align: {
+      control: "inline-radio",
+      options: ["left", "center", "right"],
+      ...cat("Layout"),
+    },
+    // Cadence (last)
+    style: {
+      control: "inline-radio",
+      options: ["reading", "speech"],
+      ...cat("Cadence"),
+    },
+    cps: { control: { type: "range", min: 10, max: 30, step: 1 }, ...cat("Cadence") },
+    commaPause: {
+      control: { type: "range", min: 0, max: 1.2, step: 0.02 },
+      ...cat("Cadence"),
+    },
+    sentencePause: {
+      control: { type: "range", min: 0, max: 1.5, step: 0.05 },
+      ...cat("Cadence"),
+    },
+    // Quote  (labels display as "mode"/"placement"; keys avoid the chunking clash)
+    quoteMode: {
+      name: "mode",
+      control: "inline-radio",
+      options: ["caption", "quote"],
+      ...cat("Quote"),
+    },
+    quotePlacement: {
+      name: "placement",
+      control: "inline-radio",
+      options: ["anchored", "inline"],
+      ...cat("Quote"),
+    },
+    authorPauseMs: {
+      name: "author pause (ms)",
+      control: { type: "range", min: 0, max: 4000, step: 100 },
+      ...cat("Quote"),
+    },
+    loop: { control: "boolean", ...cat("Quote") },
+    authorFontFamily: { name: "author font", control: "text", ...cat("Quote") },
+    authorFontWeight: {
+      name: "author weight",
+      control: { type: "range", min: 300, max: 900, step: 100 },
+      ...cat("Quote"),
+    },
+    authorColor: { name: "author color", control: "color", ...cat("Quote") },
+    authorFontSizePx: {
+      name: "author size",
+      control: { type: "range", min: 10, max: 40, step: 1 },
+      ...cat("Quote"),
+    },
+    // Real component props — pushed to a group at the bottom, no dead controls.
+    open: apiProp(),
+    anchorRef: apiProp(),
+    audioSrc: apiProp(),
+    words: apiProp(),
+    text: apiProp(),
+    cadence: apiProp(),
+    chunking: apiProp(),
+    offset: apiProp(),
+    appearance: apiProp(),
+    mode: apiProp(),
+    placement: apiProp(),
+    quotes: apiProp(),
+    authorAppearance: apiProp(),
+    quote: apiProp(),
+    onWordChange: apiProp(),
+    onEnded: apiProp(),
+    className: apiProp(),
+  },
+  render: function Render() {
+    const [a, updateArgs] = useArgs<Args>()
+    const prevRef = React.useRef<Args | null>(null)
+    // Set true when WE change the font (preset population), so the resulting arg
+    // change isn't mistaken for a user edit that would flip preset → custom.
+    const skipNextRef = React.useRef(false)
+    React.useEffect(() => {
+      const prev = prevRef.current
+      prevRef.current = a
 
-        // On mount or when the preset changes → reflect that preset's font.
-        if (!prev || a.preset !== prev.preset) {
-          const f = a.preset !== "custom" ? PRESET_FONTS[a.preset] : null
-          if (f && (a.fontFamily !== f.fontFamily || a.fontWeight !== f.fontWeight)) {
-            skipNextRef.current = true
-            updateArgs({ fontFamily: f.fontFamily, fontWeight: f.fontWeight })
-          }
-          return
+      // On mount or when the preset changes → reflect that preset's font.
+      if (!prev || a.preset !== prev.preset) {
+        const f = a.preset !== "custom" ? PRESET_FONTS[a.preset] : null
+        if (f && (a.fontFamily !== f.fontFamily || a.fontWeight !== f.fontWeight)) {
+          skipNextRef.current = true
+          updateArgs({ fontFamily: f.fontFamily, fontWeight: f.fontWeight })
         }
+        return
+      }
 
-        if (a.preset === "custom") return
-        if (skipNextRef.current) {
-          skipNextRef.current = false
-          return
-        }
-        // A Style control changed while on a named preset → switch to custom.
-        if (STYLE_KEYS.some((k) => a[k] !== prev[k])) updateArgs({ preset: "custom" })
-      }, [a, updateArgs])
-      return <PlaygroundDemo a={a} updateArgs={updateArgs} />
-    },
-  }
+      if (a.preset === "custom") return
+      if (skipNextRef.current) {
+        skipNextRef.current = false
+        return
+      }
+      // A Style control changed while on a named preset → switch to custom.
+      if (STYLE_KEYS.some((k) => a[k] !== prev[k])) updateArgs({ preset: "custom" })
+    }, [a, updateArgs])
+    return <PlaygroundDemo a={a} updateArgs={updateArgs} />
+  },
+}
 
 // ─── quick-look presets ─────────────────────────────────────────────────────────
 
@@ -890,4 +985,61 @@ export const AudioMode: Story = {
       </Stage>
     )
   },
+}
+
+// ─── placement + quote mode ─────────────────────────────────────────────────────
+
+export const QuoteMode: Story = {
+  name: "Quote mode (anchored reel)",
+  render: () => (
+    <Stage>
+      {(ref) => (
+        <LoopCallout
+          anchorRef={ref as React.RefObject<HTMLElement | null>}
+          mode="quote"
+          quotes={QUOTES}
+          quote={{ authorPauseMs: 1600, loop: true }}
+          preset="color"
+          authorAppearance={{
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 600,
+            fontSizePx: 18,
+            textColor: "#ffffff",
+          }}
+        />
+      )}
+    </Stage>
+  ),
+}
+
+export const QuoteInline: Story = {
+  name: "Quote mode (inline, in-flow)",
+  render: () => (
+    <Stage stageWidth={420}>
+      {() => (
+        <LoopCallout
+          mode="quote"
+          placement="inline"
+          quotes={QUOTES}
+          quote={{ authorPauseMs: 1600, loop: true }}
+          preset="color"
+          authorAppearance={{
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 600,
+            fontSizePx: 18,
+            textColor: "#ffffff",
+          }}
+        />
+      )}
+    </Stage>
+  ),
+}
+
+export const InlineCaption: Story = {
+  name: "Inline caption (in-flow, not anchored)",
+  render: () => (
+    <Stage stageWidth={420}>
+      {() => <LoopCallout placement="inline" text={SCRIPT} preset="box" />}
+    </Stage>
+  ),
 }

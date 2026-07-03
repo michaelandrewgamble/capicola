@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`placement` axis** (`"anchored" | "inline"`) — render the caption as the
+  classic `position: fixed` overlay portaled to `document.body` (anchored, the
+  default), or as a normal in-flow block (`inline`) where `<Capicola>` sits in
+  the tree. Fully backward compatible: `placement` defaults to `"anchored"`,
+  `open` now defaults to `true`, and `anchorRef` is only required when anchored,
+  so existing `<Capicola open anchorRef text />` usage is unchanged.
+- **Quote mode** (`mode="quote"`) — a featured-quote reel. Pass `quotes`
+  (`{ text, author? }[]`) and the whole quote shows at once while the highlight
+  sweeps only the quote words; the author renders as its own static element and
+  is never highlighted. Includes an author read-pause (dwell), auto-cycle with
+  looping, and a crossfade between quotes (reusing the `--cap-scroll-*` tokens).
+- **`QuoteOptions`** (`quote` prop) — configurable reel tuning: `authorPauseMs`
+  (author dwell), `loop` + `loopPauseMs` (auto-cycle/loop), and individually
+  configurable quotation marks and attribution separator (`openQuote`,
+  `closeQuote`, `authorSeparator`), each settable to `""` for none.
+- **`authorAppearance`** — a separate `CaptionTheme` for the quote author,
+  applied as a parallel set of `--cap-author-*` CSS variables so the attribution
+  can be styled independently of the quote body.
+
 ## [0.1.0] — Initial release
 
 ### Added

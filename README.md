@@ -140,29 +140,123 @@ Set `preset` to pick a named style template, then override any individual token 
 
 > Note: when no `preset` is set, the component renders the stylesheet defaults directly — which closely match the `box` look.
 
+## Placement
+
+`placement` chooses where the caption renders, independent of everything else (preset, mode, drive mode):
+
+- **`"anchored"`** (default) — the classic overlay. Capicola portals into `document.body`, renders `position: fixed`, and positions itself against `anchorRef` with the 3×3 anchor grid and collision-aware flip. This is the original behaviour.
+- **`"inline"`** — a normal in-flow block. The caption renders `position: relative` right where `<Capicola>` sits in your tree, participating in layout like any other element. `anchorRef` is ignored, and so are the anchoring props (`anchorX`, `anchorY`, `offset`).
+
+```tsx
+// Anchored (default) — pinned overlay, needs an anchorRef:
+<Capicola open anchorRef={anchor} text="Pinned to the target." />
+
+// Inline — flows in the document, no anchor:
+<Capicola placement="inline" text="Rendered right here, in flow." />
+```
+
+> **Backward compatible.** `placement` defaults to `"anchored"`, so existing `<Capicola open anchorRef text />` usage is unchanged. `open` now defaults to `true` (so inline/quote content autoplays on mount), and `anchorRef` is only required when `placement="anchored"`.
+
+## Quote mode
+
+Set `mode="quote"` and pass `quotes` to turn Capicola into a featured-quote reel. The whole quote is visible at once and the highlight sweeps **only** the quote words, left to right; a separately-styled author attribution stays static beside it. After the sweep the reel dwells on the author (a read-pause), then crossfades to the next quote and — by default — loops.
+
+```tsx
+<Capicola
+  placement="inline"
+  mode="quote"
+  quotes={[
+    { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
+    {
+      text: "The details are not the details. They make the design.",
+      author: "Charles Eames",
+    },
+  ]}
+/>
+```
+
+Behaviour:
+
+- **Whole quote visible** — quote mode forces a single chunk, so every word shows at once; the sweep is a highlight moving across the static line, not a paging animation.
+- **Author never highlighted** — the author renders as its own element (never part of the swept words), so the highlight can never land on it. Style it via `authorAppearance` (see below).
+- **Author dwell** — after a quote finishes sweeping, the reel holds on the author for `authorPauseMs` (default `1600`) before advancing.
+- **Auto-cycle + loop** — the reel walks `quotes` in order. With `loop` (default `true`) it wraps from the last quote back to the first after `loopPauseMs` (defaults to `authorPauseMs`); with `loop: false` it freezes on the last quote's author and stops.
+- **Crossfade** — quote-to-quote transitions crossfade, reusing the page-fade tokens (`--cap-scroll-duration` / `--cap-scroll-easing`).
+- **Accessible** — each quote is exposed to assistive tech as a single labeled group reading `quote — author`; the decorative quotation marks and separator are `aria-hidden`. Motion respects `prefers-reduced-motion`.
+
+### Quotation marks & separator
+
+Capicola wraps the quote text in typographic quotation marks and prepends a separator to the author. Each mark is individually configurable through the `quote` options, and any of them can be set to `""` (empty string) to render none:
+
+```tsx
+<Capicola
+  placement="inline"
+  mode="quote"
+  quotes={QUOTES}
+  quote={{
+    authorPauseMs: 2000,
+    openQuote: "«",
+    closeQuote: "»",
+    authorSeparator: "~ ",
+  }}
+/>
+
+// Bare quote, no marks or separator:
+<Capicola
+  placement="inline"
+  mode="quote"
+  quotes={QUOTES}
+  quote={{ openQuote: "", closeQuote: "", authorSeparator: "" }}
+/>
+```
+
+### Styling the author
+
+The author attribution has its own theme, `authorAppearance`, with the exact same token shape as `appearance`. It maps to a parallel set of `--cap-author-*` CSS variables (see the token table), so you can give the author a different font, size, weight, or colour from the quote body. Author tokens mirror the quote's typography/stroke/shadow but never carry the per-word highlight box.
+
+```tsx
+<Capicola
+  placement="inline"
+  mode="quote"
+  quotes={QUOTES}
+  appearance={{ fontSizePx: 40 }}
+  authorAppearance={{
+    fontSizePx: 22,
+    fontWeight: 600,
+    textColor: "#9CA3AF",
+    textTransform: "none",
+  }}
+/>
+```
+
 ## Props / API reference
 
 ### `CapicolaProps`
 
-| Prop           | Type                                        | Default      | Description                                                                                                                    |
-| -------------- | ------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `open`         | `boolean`                                   | — (required) | Mounts + plays when `true`; resets and hides when `false`.                                                                     |
-| `anchorRef`    | `React.RefObject<HTMLElement \| null>`      | — (required) | The element the caption is positioned against.                                                                                 |
-| `audioSrc`     | `string`                                    | `undefined`  | Audio-mode narration URL/path. Provide alongside `words`.                                                                      |
-| `words`        | `WordTiming[]`                              | `undefined`  | Audio-mode word timings (seconds). When present, drives the highlight from the audio clock.                                    |
-| `text`         | `string`                                    | `undefined`  | Cadence-mode text; per-word timings are computed from `cadence`.                                                               |
-| `cadence`      | `CadenceOptions`                            | see below    | Tuning for cadence mode's per-word pacing.                                                                                     |
-| `chunking`     | `ChunkingOptions`                           | see below    | How words are grouped into on-screen pages.                                                                                    |
-| `width`        | `number \| "parent" \| "auto"`              | `"auto"`     | Box width source: hug content (`"auto"`), match the anchor's parent width (`"parent"`, live), or a max width in px (`number`). |
-| `align`        | `"left" \| "center" \| "right"`             | `"center"`   | Horizontal alignment of the text within the box when the box is wider than the content.                                        |
-| `anchorX`      | `"left" \| "center" \| "right"`             | `"center"`   | Horizontal anchor position relative to the target.                                                                             |
-| `anchorY`      | `"top" \| "middle" \| "bottom" \| "auto"`   | `"top"`      | Vertical anchor position: above / over / below the target, or collision-aware `"auto"`.                                        |
-| `offset`       | `number`                                    | `8`          | Gap (px) pushed outward for edge positions. Ignored for `center`/`middle`.                                                     |
-| `preset`       | `"box" \| "color" \| "bubble" \| "plain"`   | `undefined`  | Named style template; `appearance` merges on top.                                                                              |
-| `appearance`   | `CaptionTheme`                              | `undefined`  | Aesthetic token overrides, merged over the preset (or defaults) and applied as `--cap-*` variables.                            |
-| `onWordChange` | `(index: number, word: WordTiming) => void` | `undefined`  | Fires whenever the active word index changes. Good for analytics.                                                              |
-| `onEnded`      | `() => void`                                | `undefined`  | Fires once the sequence/audio completes.                                                                                       |
-| `className`    | `string`                                    | `undefined`  | Extra class on the caption root — the escape hatch for raw `--cap-*` overrides.                                                |
+| Prop               | Type                                        | Default      | Description                                                                                                                    |
+| ------------------ | ------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `open`             | `boolean`                                   | `true`       | Mounts + plays when `true`; resets and hides when `false`.                                                                     |
+| `anchorRef`        | `React.RefObject<HTMLElement \| null>`      | `undefined`  | The element the caption is positioned against. Required (and only used) when `placement="anchored"`.                           |
+| `placement`        | `"anchored" \| "inline"`                    | `"anchored"` | Where the caption renders: pinned overlay portaled to `document.body`, or a normal in-flow block. See [Placement](#placement). |
+| `mode`             | `"caption" \| "quote"`                      | `"caption"`  | What the engine sweeps: the rolling word-by-word caption, or the featured-quote reel. See [Quote mode](#quote-mode).           |
+| `quotes`           | `Quote[]`                                   | `undefined`  | The featured quotes for `mode="quote"`; the reel cycles through them in order. Ignored in caption mode.                        |
+| `authorAppearance` | `CaptionTheme`                              | `undefined`  | Aesthetic overrides for the quote author (quote mode), applied as `--cap-author-*` variables.                                  |
+| `quote`            | `QuoteOptions`                              | see below    | Tuning for the quote reel (pauses, looping, quotation marks, separator).                                                       |
+| `audioSrc`         | `string`                                    | `undefined`  | Audio-mode narration URL/path. Provide alongside `words`.                                                                      |
+| `words`            | `WordTiming[]`                              | `undefined`  | Audio-mode word timings (seconds). When present, drives the highlight from the audio clock.                                    |
+| `text`             | `string`                                    | `undefined`  | Cadence-mode text; per-word timings are computed from `cadence`.                                                               |
+| `cadence`          | `CadenceOptions`                            | see below    | Tuning for cadence mode's per-word pacing.                                                                                     |
+| `chunking`         | `ChunkingOptions`                           | see below    | How words are grouped into on-screen pages.                                                                                    |
+| `width`            | `number \| "parent" \| "auto"`              | `"auto"`     | Box width source: hug content (`"auto"`), match the anchor's parent width (`"parent"`, live), or a max width in px (`number`). |
+| `align`            | `"left" \| "center" \| "right"`             | `"center"`   | Horizontal alignment of the text within the box when the box is wider than the content.                                        |
+| `anchorX`          | `"left" \| "center" \| "right"`             | `"center"`   | Horizontal anchor position relative to the target.                                                                             |
+| `anchorY`          | `"top" \| "middle" \| "bottom" \| "auto"`   | `"top"`      | Vertical anchor position: above / over / below the target, or collision-aware `"auto"`.                                        |
+| `offset`           | `number`                                    | `8`          | Gap (px) pushed outward for edge positions. Ignored for `center`/`middle`.                                                     |
+| `preset`           | `"box" \| "color" \| "bubble" \| "plain"`   | `undefined`  | Named style template; `appearance` merges on top.                                                                              |
+| `appearance`       | `CaptionTheme`                              | `undefined`  | Aesthetic token overrides, merged over the preset (or defaults) and applied as `--cap-*` variables.                            |
+| `onWordChange`     | `(index: number, word: WordTiming) => void` | `undefined`  | Fires whenever the active word index changes. Good for analytics.                                                              |
+| `onEnded`          | `() => void`                                | `undefined`  | Fires once the sequence/audio completes.                                                                                       |
+| `className`        | `string`                                    | `undefined`  | Extra class on the caption root — the escape hatch for raw `--cap-*` overrides.                                                |
 
 Provide **either** `text` (cadence mode) **or** `words` + `audioSrc` (audio mode). If both `words` and `text` are supplied, `words` wins.
 
@@ -201,6 +295,26 @@ Provide **either** `text` (cadence mode) **or** `words` + `audioSrc` (audio mode
 
 > `width` chunking requires a resolved numeric box width. Under `width: "auto"` it falls back to `maxWords`-only packing.
 
+### `Quote` (quote mode)
+
+| Field    | Type     | Description                                                            |
+| -------- | -------- | ---------------------------------------------------------------------- |
+| `text`   | `string` | The quote body — the words the highlight sweeps across.                |
+| `author` | `string` | Optional attribution. Rendered as its own static element, never swept. |
+
+### `QuoteOptions` (quote mode)
+
+All optional; defaults keep the reference look. `openQuote`, `closeQuote`, and `authorSeparator` may each be set to `""` (empty string) to render none.
+
+| Option            | Type      | Default         | Description                                                        |
+| ----------------- | --------- | --------------- | ------------------------------------------------------------------ |
+| `authorPauseMs`   | `number`  | `1600`          | Extra dwell on the author after a quote's sweep finishes, ms.      |
+| `loop`            | `boolean` | `true`          | Auto-cycle and loop back to the first quote after the last.        |
+| `loopPauseMs`     | `number`  | `authorPauseMs` | Dwell before looping from the last quote back to the first, ms.    |
+| `openQuote`       | `string`  | `"“"`           | Opening quotation mark wrapped around the quote text. `""` = none. |
+| `closeQuote`      | `string`  | `"”"`           | Closing quotation mark wrapped around the quote text. `""` = none. |
+| `authorSeparator` | `string`  | `"— "`          | Separator prepended to the author attribution. `""` = none.        |
+
 ### `CaptionTheme` tokens (used by `appearance` and each preset)
 
 Every token maps to a `--cap-*` CSS custom property. Omit a token and the CSS default (below) applies. Values are all optional.
@@ -236,7 +350,23 @@ Every token maps to a `--cap-*` CSS custom property. Omit a token and the CSS de
 
 \* The drop shadow is expressed as a **distance + angle** in tokens (like CapCut) and resolved into x/y offsets. When you set only `shadowDistancePx`, it maps to `--cap-shadow-offset-y`. Set both `shadowDistancePx` and `shadowAngleDeg` for a directional offset. The `--cap-shadow-offset-x` / `--cap-shadow-offset-y` variables can also be set directly via CSS.
 
-> The stylesheet also exposes `--cap-scroll-duration` (`150ms`) and `--cap-scroll-easing` (`ease-out`) for the page fade-in. These have no `appearance` token — set them via CSS if you want to retune the paging transition.
+> The stylesheet also exposes `--cap-scroll-duration` (`150ms`) and `--cap-scroll-easing` (`ease-out`) for the page fade-in — reused for the quote-to-quote crossfade in quote mode. These have no `appearance` token — set them via CSS if you want to retune the paging/crossfade transition.
+
+#### `--cap-author-*` tokens (author attribution, quote mode)
+
+The quote author is themed separately from the quote body. Every `CaptionTheme` token above has a parallel `--cap-author-*` custom property, written by the `authorAppearance` prop (which shares the `CaptionTheme` shape). The naming mirrors the base set one-to-one — swap the `--cap-` prefix for `--cap-author-`:
+
+| `appearance` token / `--cap-*`                        | Author equivalent (`--cap-author-*`)                      |
+| ----------------------------------------------------- | --------------------------------------------------------- |
+| `--cap-font-family`                                   | `--cap-author-font-family`                                |
+| `--cap-font-weight`                                   | `--cap-author-font-weight`                                |
+| `--cap-font-size`                                     | `--cap-author-font-size`                                  |
+| `--cap-text-color`                                    | `--cap-author-text-color`                                 |
+| `--cap-stroke-color` / `--cap-stroke-width`           | `--cap-author-stroke-color` / `--cap-author-stroke-width` |
+| `--cap-shadow-*`                                      | `--cap-author-shadow-*`                                   |
+| …every other `--cap-*` typography/stroke/shadow token | …its `--cap-author-*` counterpart                         |
+
+The author carries **no** per-word highlight box (the `highlight*` tokens don't apply — the author is never swept). By default it renders a touch smaller and lighter than the quote body — `--cap-author-font-size` is `19px`, `--cap-author-font-weight` is `600`, and `--cap-author-text-transform` is `none` — while colour, stroke, and shadow inherit the corresponding `--cap-*` quote value unless overridden. Set any of these via `authorAppearance` (typed) or raw `--cap-author-*` CSS on `className`.
 
 ## Theming
 

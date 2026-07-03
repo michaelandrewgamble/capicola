@@ -4,6 +4,17 @@ import { createPortal } from "react-dom"
 import { computeCadence } from "./cadence"
 import { chunkWords, findChunkIndex } from "./chunking"
 import { useAudioWordSync } from "./use-audio-word-sync"
+import {
+  DEFAULT_AUTHOR_SEPARATOR,
+  DEFAULT_CLOSE_QUOTE,
+  DEFAULT_OPEN_QUOTE,
+  QUOTE_CHUNKING,
+  advanceAfterDwell,
+  advanceOnEnded,
+  composeAuthor,
+  initialQuoteState,
+  quoteWords,
+} from "./quote-sequencer"
 import type { CaptionPreset, CaptionTheme, CapicolaProps, WordTiming } from "./types"
 
 // useLayoutEffect logs a warning when run on the server (Next.js SSR/RSC). The
@@ -11,6 +22,10 @@ import type { CaptionPreset, CaptionTheme, CapicolaProps, WordTiming } from "./t
 // apps that import the component into a server-rendered tree.
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect
+
+// Quote-reel crossfade duration (ms): fade the finished quote out, swap, fade the
+// next in. Kept in sync with the inline opacity transition on the caption root.
+const QUOTE_FADE_MS = 220
 
 // ─── style presets (CapCut-style templates) ──────────────────────────────────
 // Each is a full bundle of CaptionTheme tokens tuned to its reference sample;
@@ -97,66 +112,71 @@ function weightInFace(faceWeight: string, want: number): boolean {
 // ─── theme → CSS variables ────────────────────────────────────────────────────
 
 /**
- * Map a partial CaptionTheme onto `--cap-*` CSS custom properties.
+ * Map a partial CaptionTheme onto `--${prefix}-*` CSS custom properties.
  * Undefined values are omitted so the CSS defaults in capicola.css win.
+ *
+ * `prefix` lets the same mapping drive parallel token families: the caption uses
+ * the default `"cap"` (→ `--cap-*`); the quote author uses `"cap-author"`
+ * (→ `--cap-author-*`), so author styling is themed with the identical token
+ * shape without colliding with the main caption vars.
  */
-function themeToVars(theme: CaptionTheme): React.CSSProperties {
+function themeToVars(theme: CaptionTheme, prefix = "cap"): React.CSSProperties {
   const vars: Record<string, string> = {}
+  const p = `--${prefix}`
 
-  if (theme.fontFamily !== undefined) vars["--cap-font-family"] = theme.fontFamily
-  if (theme.fontWeight !== undefined) vars["--cap-font-weight"] = String(theme.fontWeight)
-  if (theme.fontSizePx !== undefined) vars["--cap-font-size"] = `${theme.fontSizePx}px`
+  if (theme.fontFamily !== undefined) vars[`${p}-font-family`] = theme.fontFamily
+  if (theme.fontWeight !== undefined) vars[`${p}-font-weight`] = String(theme.fontWeight)
+  if (theme.fontSizePx !== undefined) vars[`${p}-font-size`] = `${theme.fontSizePx}px`
   if (theme.letterSpacingEm !== undefined)
-    vars["--cap-letter-spacing"] = `${theme.letterSpacingEm}em`
-  if (theme.textTransform !== undefined)
-    vars["--cap-text-transform"] = theme.textTransform
-  if (theme.textColor !== undefined) vars["--cap-text-color"] = theme.textColor
+    vars[`${p}-letter-spacing`] = `${theme.letterSpacingEm}em`
+  if (theme.textTransform !== undefined) vars[`${p}-text-transform`] = theme.textTransform
+  if (theme.textColor !== undefined) vars[`${p}-text-color`] = theme.textColor
 
-  if (theme.strokeColor !== undefined) vars["--cap-stroke-color"] = theme.strokeColor
+  if (theme.strokeColor !== undefined) vars[`${p}-stroke-color`] = theme.strokeColor
   if (theme.strokeWidthPx !== undefined)
-    vars["--cap-stroke-width"] = `${theme.strokeWidthPx}px`
+    vars[`${p}-stroke-width`] = `${theme.strokeWidthPx}px`
 
-  if (theme.shadowColor !== undefined) vars["--cap-shadow-color"] = theme.shadowColor
+  if (theme.shadowColor !== undefined) vars[`${p}-shadow-color`] = theme.shadowColor
   if (theme.shadowBlurPx !== undefined)
-    vars["--cap-shadow-blur"] = `${theme.shadowBlurPx}px`
+    vars[`${p}-shadow-blur`] = `${theme.shadowBlurPx}px`
   if (theme.shadowDistancePx !== undefined && theme.shadowAngleDeg !== undefined) {
     const rad = (theme.shadowAngleDeg * Math.PI) / 180
-    vars["--cap-shadow-offset-x"] =
+    vars[`${p}-shadow-offset-x`] =
       `${Math.round(Math.cos(rad) * theme.shadowDistancePx)}px`
-    vars["--cap-shadow-offset-y"] =
+    vars[`${p}-shadow-offset-y`] =
       `${Math.round(Math.sin(rad) * theme.shadowDistancePx)}px`
   } else if (theme.shadowDistancePx !== undefined) {
-    vars["--cap-shadow-offset-y"] = `${theme.shadowDistancePx}px`
+    vars[`${p}-shadow-offset-y`] = `${theme.shadowDistancePx}px`
   }
 
   if (theme.highlightColor !== undefined)
-    vars["--cap-highlight-color"] = theme.highlightColor
+    vars[`${p}-highlight-color`] = theme.highlightColor
   if (theme.highlightTextColor !== undefined)
-    vars["--cap-highlight-text-color"] = theme.highlightTextColor
+    vars[`${p}-highlight-text-color`] = theme.highlightTextColor
   if (theme.highlightPaddingXPx !== undefined)
-    vars["--cap-highlight-padding-x"] = `${theme.highlightPaddingXPx}px`
+    vars[`${p}-highlight-padding-x`] = `${theme.highlightPaddingXPx}px`
   if (theme.highlightPaddingYPx !== undefined)
-    vars["--cap-highlight-padding-y"] = `${theme.highlightPaddingYPx}px`
+    vars[`${p}-highlight-padding-y`] = `${theme.highlightPaddingYPx}px`
   if (theme.highlightRadiusPx !== undefined)
-    vars["--cap-highlight-radius"] = `${theme.highlightRadiusPx}px`
+    vars[`${p}-highlight-radius`] = `${theme.highlightRadiusPx}px`
   if (theme.highlightOpacity !== undefined)
-    vars["--cap-highlight-opacity"] = String(theme.highlightOpacity)
+    vars[`${p}-highlight-opacity`] = String(theme.highlightOpacity)
 
   if (theme.backgroundColor !== undefined)
-    vars["--cap-background-color"] = theme.backgroundColor
+    vars[`${p}-background-color`] = theme.backgroundColor
   if (theme.backgroundPaddingXPx !== undefined)
-    vars["--cap-background-padding-x"] = `${theme.backgroundPaddingXPx}px`
+    vars[`${p}-background-padding-x`] = `${theme.backgroundPaddingXPx}px`
   if (theme.backgroundPaddingYPx !== undefined)
-    vars["--cap-background-padding-y"] = `${theme.backgroundPaddingYPx}px`
+    vars[`${p}-background-padding-y`] = `${theme.backgroundPaddingYPx}px`
   if (theme.backgroundRadiusPx !== undefined)
-    vars["--cap-background-radius"] = `${theme.backgroundRadiusPx}px`
+    vars[`${p}-background-radius`] = `${theme.backgroundRadiusPx}px`
 
-  if (theme.popScale !== undefined) vars["--cap-pop-scale"] = String(theme.popScale)
+  if (theme.popScale !== undefined) vars[`${p}-pop-scale`] = String(theme.popScale)
   if (theme.popDurationMs !== undefined)
-    vars["--cap-pop-duration"] = `${theme.popDurationMs}ms`
-  if (theme.popEasing !== undefined) vars["--cap-pop-easing"] = theme.popEasing
+    vars[`${p}-pop-duration`] = `${theme.popDurationMs}ms`
+  if (theme.popEasing !== undefined) vars[`${p}-pop-easing`] = theme.popEasing
 
-  if (theme.wordGapEm !== undefined) vars["--cap-word-gap"] = `${theme.wordGapEm}em`
+  if (theme.wordGapEm !== undefined) vars[`${p}-word-gap`] = `${theme.wordGapEm}em`
 
   return vars as React.CSSProperties
 }
@@ -172,6 +192,9 @@ export function Capicola({
   cadence,
   placement = "anchored",
   mode = "caption",
+  quotes,
+  authorAppearance,
+  quote,
   chunking,
   width = "auto",
   align = "center",
@@ -189,18 +212,52 @@ export function Capicola({
   // and positioning below are gated on `isAnchored && anchorRef` so the inline
   // path never touches the (optional) ref. `mode` is consumed by later phases;
   // the engine (word track/measure/chunk/theme) is identical for both.
-  void mode
   const isAnchored = placement === "anchored"
-  // Resolve words: audio mode supplies words directly; cadence mode computes them.
+  const isQuote = mode === "quote"
+
+  // ── Quote reel config (mode="quote") ────────────────────────────────────────
+  // Extracted to primitives so the timers/effects below don't re-run when a parent
+  // re-renders with a fresh `quote` object carrying identical values.
+  const quoteCount = quotes?.length ?? 0
+  const loop = quote?.loop ?? true
+  const authorPauseMs = quote?.authorPauseMs ?? 1600
+  const loopPauseMs = quote?.loopPauseMs ?? authorPauseMs
+  const openQuoteMark = quote?.openQuote ?? DEFAULT_OPEN_QUOTE
+  const closeQuoteMark = quote?.closeQuote ?? DEFAULT_CLOSE_QUOTE
+  const authorSeparator = quote?.authorSeparator ?? DEFAULT_AUTHOR_SEPARATOR
+
+  // The reel's two-phase state: which quote is on screen, sweeping vs. author dwell.
+  const [seq, setSeq] = React.useState(initialQuoteState)
+  const activeQuote = isQuote ? quotes?.[seq.quoteIndex] : undefined
+  // Crossfade: fade the finished quote OUT, swap while hidden, fade the next IN.
+  const [fadingOut, setFadingOut] = React.useState(false)
+  // Webfont-ready gate (set by the effect below). Declared up here so the quote
+  // re-drive effect can hold the sweep until the caption is actually revealed.
+  const [fontReady, setFontReady] = React.useState(false)
+
+  // Resolve words: quote mode sweeps the active quote's BODY only (author excluded);
+  // audio mode supplies words directly; cadence mode computes them from `text`.
   const resolvedWords = React.useMemo<WordTiming[]>(() => {
+    if (isQuote) {
+      const q = quotes?.[seq.quoteIndex]
+      return q ? quoteWords(q, cadence) : []
+    }
     if (wordsProp && wordsProp.length > 0) return wordsProp
     if (text) return computeCadence(text, cadence)
     return []
-  }, [wordsProp, text, cadence])
+  }, [isQuote, quotes, seq.quoteIndex, wordsProp, text, cadence])
 
   // Hidden audio element for audio mode.
   const audioRef = React.useRef<HTMLAudioElement | null>(null)
   const hasAudio = Boolean(audioSrc)
+
+  // In quote mode, a finished word sweep advances the reel into the author dwell
+  // (advanceOnEnded); the user's onEnded still fires per-quote. In caption mode this
+  // is just the user's onEnded, unchanged.
+  const handleEnded = React.useCallback(() => {
+    if (isQuote) setSeq((s) => advanceOnEnded(s, quoteCount, loop))
+    onEnded?.()
+  }, [isQuote, quoteCount, loop, onEnded])
 
   // The timing hook drives activeIndex.
   const { activeIndex, play, reset } = useAudioWordSync({
@@ -208,17 +265,19 @@ export function Capicola({
     words: resolvedWords,
     audioRef: hasAudio ? audioRef : undefined,
     onWordChange,
-    onEnded,
+    onEnded: handleEnded,
   })
 
   // Holds the page shown during a punctuation beat (when activeIndex === -1)
   // so the caption doesn't snap back to page 0 every beat.
   const lastChunkIdxRef = React.useRef(0)
 
-  // Play on open, reset on close.
+  // Play on open, reset on close. Quote mode drives play() from the re-drive effect
+  // below (keyed on the active quote) so the sweep restarts on the freshly rendered
+  // word track; here we own only the caption-mode autoplay + the shared reset-on-close.
   React.useEffect(() => {
     if (open) {
-      play()
+      if (!isQuote) play()
     } else {
       reset()
       lastChunkIdxRef.current = 0
@@ -226,12 +285,59 @@ export function Capicola({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // Quote reel — author read-pause. Once a sweep finishes (phase "dwelling"), hold on
+  // the author for authorPauseMs (loopPauseMs before wrapping from the last quote),
+  // then advance. `done` (loop:false on the last quote) freezes the reel.
+  React.useEffect(() => {
+    if (!isQuote || !open || seq.phase !== "dwelling") return
+    // Freeze on the last quote when not looping — no advance, no fade.
+    if (advanceAfterDwell(seq, quoteCount, loop).done) return
+    const isLast = seq.quoteIndex >= Math.max(1, quoteCount) - 1
+    const pauseMs = isLast ? loopPauseMs : authorPauseMs
+    let swapTimer: ReturnType<typeof setTimeout> | undefined
+    // 1) hold on the author, 2) fade the finished quote OUT, 3) swap while hidden
+    // and fade the next quote IN — a real crossfade, not a hard cut.
+    const dwellTimer = setTimeout(() => {
+      setFadingOut(true)
+      swapTimer = setTimeout(() => {
+        setSeq((s) => advanceAfterDwell(s, quoteCount, loop).next)
+        setFadingOut(false)
+      }, QUOTE_FADE_MS)
+    }, pauseMs)
+    return () => {
+      clearTimeout(dwellTimer)
+      if (swapTimer) clearTimeout(swapTimer)
+    }
+  }, [isQuote, open, seq, quoteCount, loop, authorPauseMs, loopPauseMs])
+
+  // Quote reel — sweep re-drive (the race fix). Runs AFTER the commit in which
+  // `resolvedWords` was recomputed for the new quote, so reset()+play() always start
+  // the hook on the freshly rendered word track — never play() in the same tick that
+  // bumps quoteIndex. Guarded on "sweeping" so it starts each new quote AND restarts a
+  // single-quote self-loop (dwelling→sweeping at the same index), while the
+  // sweep→dwell transition stays a no-op.
+  React.useEffect(() => {
+    // Hold the sweep until the caption is actually revealed (fontReady), so the
+    // first quote's sweep isn't spent behind the FOUT gate.
+    if (!isQuote || !open || !fontReady || seq.phase !== "sweeping") return
+    reset()
+    play()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isQuote, open, fontReady, seq.quoteIndex, seq.phase])
+
   // Merge preset → appearance (appearance wins).
   const mergedTheme = React.useMemo<CaptionTheme>(
     () => ({ ...(preset ? PRESETS[preset] : null), ...appearance }),
     [preset, appearance],
   )
   const themeVars = React.useMemo(() => themeToVars(mergedTheme), [mergedTheme])
+  // Quote-mode author styling → parallel --cap-author-* vars (same token shape as
+  // the caption). Empty object when no override, so the CSS defaults win. Consumed
+  // by the author render in a later phase.
+  const authorVars = React.useMemo<React.CSSProperties>(
+    () => (authorAppearance ? themeToVars(authorAppearance, "cap-author") : {}),
+    [authorAppearance],
+  )
 
   // ── Box width resolution ────────────────────────────────────────────────────
   // "parent" tracks the anchorRef's PARENT element width (live); number = fixed
@@ -278,7 +384,7 @@ export function Capicola({
   // Gate the caption until the webfont is loaded — avoids a flash of the fallback
   // face (FOUT). Kicked on mount (runs even while closed) so it's usually ready
   // before the first open; also re-measures width mode once metrics are real.
-  const [fontReady, setFontReady] = React.useState(false)
+  // (fontReady state is declared near the top so the quote re-drive can gate on it.)
   React.useEffect(() => {
     const fonts = (document as Document & { fonts?: FontFaceSet }).fonts
     if (!fonts) {
@@ -290,38 +396,67 @@ export function Capicola({
     // fonts.check() then returns true ("no matching face → system fallback is
     // fine"), releasing the gate one frame too early → the FOUT you see. So we
     // wait until the specific face is both registered AND loaded.
-    const family = (mergedTheme.fontFamily ?? "Barlow Condensed")
-      .split(",")[0]
-      .trim()
-      .replace(/['"]/g, "")
-      .toLowerCase()
-    const wantWeight = Number(mergedTheme.fontWeight ?? 900)
+    const normFamily = (fam: string) =>
+      fam.split(",")[0].trim().replace(/['"]/g, "").toLowerCase()
+
+    // The caption face is always awaited. In quote mode the author is styled via
+    // `authorAppearance`; when it uses a DIFFERENT family/weight the author renders
+    // in its own webfont, so gate on that face too — otherwise the author flashes
+    // its fallback while the quote text is already sharp. Only a distinct target is
+    // added (same family+weight ⇒ already covered).
+    const targets: { family: string; weight: number }[] = [
+      {
+        family: normFamily(mergedTheme.fontFamily ?? "Barlow Condensed"),
+        weight: Number(mergedTheme.fontWeight ?? 900),
+      },
+    ]
+    if (
+      authorAppearance &&
+      (authorAppearance.fontFamily !== undefined ||
+        authorAppearance.fontWeight !== undefined)
+    ) {
+      const authorFamily = normFamily(
+        authorAppearance.fontFamily ?? mergedTheme.fontFamily ?? "Barlow Condensed",
+      )
+      const authorWeight = Number(
+        authorAppearance.fontWeight ?? mergedTheme.fontWeight ?? 900,
+      )
+      if (authorFamily !== targets[0].family || authorWeight !== targets[0].weight) {
+        targets.push({ family: authorFamily, weight: authorWeight })
+      }
+    }
+
     let alive = true
     let raf = 0
     const start = Date.now()
 
-    const isReady = () => {
-      try {
-        const faces: FontFace[] = []
-        fonts.forEach((ff) => {
-          if (ff.family.replace(/['"]/g, "").toLowerCase() === family) faces.push(ff)
-        })
-        if (faces.length === 0) return false // family not registered yet
-        // Prefer the requested weight; if that weight isn't available (e.g. a
-        // single-weight font like Anton at 900), accept ANY loaded face of the
-        // family — the browser faux-bolds. Kick off loads for the relevant ones.
-        const exact = faces.filter((ff) => weightInFace(ff.weight, wantWeight))
-        const relevant = exact.length ? exact : faces
-        for (const ff of relevant) {
-          if (ff.status === "unloaded") {
-            try {
-              void ff.load()
-            } catch {
-              /* ignore */
-            }
+    // A single target family+weight is loaded (kicking off unloaded faces).
+    const faceReady = (family: string, wantWeight: number) => {
+      const faces: FontFace[] = []
+      fonts.forEach((ff) => {
+        if (ff.family.replace(/['"]/g, "").toLowerCase() === family) faces.push(ff)
+      })
+      if (faces.length === 0) return false // family not registered yet
+      // Prefer the requested weight; if that weight isn't available (e.g. a
+      // single-weight font like Anton at 900), accept ANY loaded face of the
+      // family — the browser faux-bolds. Kick off loads for the relevant ones.
+      const exact = faces.filter((ff) => weightInFace(ff.weight, wantWeight))
+      const relevant = exact.length ? exact : faces
+      for (const ff of relevant) {
+        if (ff.status === "unloaded") {
+          try {
+            void ff.load()
+          } catch {
+            /* ignore */
           }
         }
-        return relevant.some((ff) => ff.status === "loaded")
+      }
+      return relevant.some((ff) => ff.status === "loaded")
+    }
+
+    const isReady = () => {
+      try {
+        return targets.every((t) => faceReady(t.family, t.weight))
       } catch {
         return false
       }
@@ -342,7 +477,15 @@ export function Capicola({
       alive = false
       cancelAnimationFrame(raf)
     }
-  }, [mergedTheme.fontFamily, mergedTheme.fontWeight])
+    // Depend on the scalar font family/weight of the quote + author, not the
+    // authorAppearance object identity (which changes every render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    mergedTheme.fontFamily,
+    mergedTheme.fontWeight,
+    authorAppearance?.fontFamily,
+    authorAppearance?.fontWeight,
+  ])
 
   useIsomorphicLayoutEffect(() => {
     if (!open || resolvedBoxWidth === undefined) return
@@ -357,12 +500,16 @@ export function Capicola({
 
   // ── Chunk into pages ────────────────────────────────────────────────────────
   const chunks = React.useMemo(() => {
+    // Quote mode forces the WHOLE quote onto one page (QUOTE_CHUNKING) and skips
+    // width-mode measurement so it can never split — the highlight sweeps one chunk.
     const measure =
-      typeof resolvedBoxWidth === "number" && wordWidths.length === resolvedWords.length
+      !isQuote &&
+      typeof resolvedBoxWidth === "number" &&
+      wordWidths.length === resolvedWords.length
         ? { wordWidths, gapWidth, targetWidth: resolvedBoxWidth }
         : undefined
-    return chunkWords(resolvedWords, chunking, measure)
-  }, [resolvedWords, chunking, resolvedBoxWidth, wordWidths, gapWidth])
+    return chunkWords(resolvedWords, isQuote ? QUOTE_CHUNKING : chunking, measure)
+  }, [isQuote, resolvedWords, chunking, resolvedBoxWidth, wordWidths, gapWidth])
 
   // ── Caption size (for `auto` collision flipping) ────────────────────────────
   const rootElRef = React.useRef<HTMLDivElement | null>(null)
@@ -389,6 +536,18 @@ export function Capicola({
 
   const justify =
     align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center"
+  // Quote mode stacks the quote over the author (column) and aligns them on the cross
+  // axis; caption mode keeps the classic single-axis row justification.
+  const alignmentStyle: React.CSSProperties = isQuote
+    ? { flexDirection: "column", alignItems: justify }
+    : { justifyContent: justify }
+
+  // Quote-reel crossfade: the whole caption (quote + author) fades out/in around
+  // each reel step. opacity-only → compositor-safe, honours the anti-jitter contract.
+  const quoteCrossfadeStyle: React.CSSProperties = {
+    opacity: fadingOut ? 0 : 1,
+    transition: `opacity ${QUOTE_FADE_MS}ms var(--cap-quote-transition-easing, ease)`,
+  }
 
   // ── 2-axis anchor positioning ───────────────────────────────────────────────
   // Resolve `auto` → prefer above, flip below when there's no room above (and the
@@ -435,22 +594,26 @@ export function Capicola({
         // Anchored overlay: fixed + positioned against the anchor rect. Hidden
         // until the webfont is ready AND the anchor is measured (no flash/jump).
         ...themeVars,
+        ...authorVars,
         ...(resolvedBoxWidth !== undefined ? { width: `${resolvedBoxWidth}px` } : null),
-        justifyContent: justify,
+        ...alignmentStyle,
         position: "fixed",
         left: px,
         top: py,
         transform: `translate(calc(${tx}% + ${ox}px), calc(${ty}% + ${oy}px)) translateZ(0)`,
         zIndex: 9999,
         visibility: fontReady && anchorBox ? "visible" : "hidden",
+        ...(isQuote ? quoteCrossfadeStyle : null),
       }
     : {
         // Inline block: no positioning/transform (handled by .cap-root--inline);
         // it flows where <Capicola> sits. Only gate on the webfont, never the anchor.
         ...themeVars,
+        ...authorVars,
         ...(resolvedBoxWidth !== undefined ? { width: `${resolvedBoxWidth}px` } : null),
-        justifyContent: justify,
+        ...alignmentStyle,
         visibility: fontReady ? "visible" : "hidden",
+        ...(isQuote ? quoteCrossfadeStyle : null),
       }
 
   // When a box width is set the page wraps to lines; otherwise it's a single row.
@@ -463,7 +626,12 @@ export function Capicola({
   // rather than a chatty aria-live region that re-announces each word/page as
   // the highlight sweeps. Callers should still caption the underlying media
   // through the normal accessible channels; this is a visual enhancement.
-  const captionText = resolvedWords.map((w) => w.text).join(" ")
+  // Quote mode reads as "quote — author" so assistive tech hears the attribution too.
+  const captionText = isQuote
+    ? activeQuote
+      ? [activeQuote.text, activeQuote.author].filter(Boolean).join(" — ")
+      : ""
+    : resolvedWords.map((w) => w.text).join(" ")
 
   const caption = (
     <div
@@ -487,16 +655,23 @@ export function Capicola({
         </div>
       )}
 
-      {/* Visible page — keyed on chunk index so a new page fades in. The words
-          are a visual presentation of the group's aria-label, so they're hidden
-          from assistive tech to avoid duplicate / fragmented announcements. */}
+      {/* Visible page. Caption mode keys on chunk index (page fade); quote mode uses a
+          stable key — the reel crossfade is driven by the root opacity above, and the
+          words swap in place while hidden. The words are a visual presentation of the
+          group's aria-label, so they're hidden from assistive tech. */}
       <div
-        className="cap-track"
-        key={chunkIdx}
+        className={isQuote ? "cap-track cap-track--quote" : "cap-track"}
+        key={isQuote ? "quote" : chunkIdx}
         data-chunk={chunkIdx}
         style={trackStyle}
         aria-hidden
       >
+        {/* Decorative opening quotation mark — never part of the swept word track. */}
+        {isQuote && openQuoteMark !== "" && (
+          <span className="cap-word" data-active="false" aria-hidden>
+            {openQuoteMark}
+          </span>
+        )}
         {chunk.words.map((word, i) => {
           const globalIndex = chunk.startIndex + i
           const isActive = globalIndex === activeIndex
@@ -510,7 +685,24 @@ export function Capicola({
             </span>
           )
         })}
+        {/* Decorative closing quotation mark — never part of the swept word track. */}
+        {isQuote && closeQuoteMark !== "" && (
+          <span className="cap-word" data-active="false" aria-hidden>
+            {closeQuoteMark}
+          </span>
+        )}
       </div>
+
+      {/* Quote author attribution — its own static element (never in the swept word
+          track), so the highlight can NEVER land on it. data-active mirrors the reel
+          phase; the leading separator is composed via the pure helper ("" ⇒ none). */}
+      {isQuote && activeQuote?.author && (
+        <div className="cap-author" data-active={seq.phase} aria-hidden>
+          <span className="cap-author-word">
+            {composeAuthor(activeQuote.author, authorSeparator)}
+          </span>
+        </div>
+      )}
     </div>
   )
 
