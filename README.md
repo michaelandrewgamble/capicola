@@ -30,7 +30,7 @@ Set a `preset`, then override any individual token through the typed `appearance
 
 <p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/expanded-config.png" width="820" alt="A Capicola appearance config and the caption it renders, side by side" /></p>
 
-Every prop and token is a live control in the [Storybook playground](https://michaelandrewgamble.github.io/capicola/?path=/story/components-capicola--playground) — presets, per-color opacity, fonts, chunking, and layout:
+Every prop and token is a live control in the [Storybook playground](https://michaelandrewgamble.github.io/capicola/?path=/story/components-capicola--playground) — a live preview with a searchable Google-font picker up top, then presets, per-color opacity, stroke/shadow, chunking, layout, and cadence:
 
 <p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/config-options.png" width="560" alt="The full set of Capicola configuration options as live Storybook controls" /></p>
 
