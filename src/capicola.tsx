@@ -164,12 +164,14 @@ function themeToVars(theme: CaptionTheme): React.CSSProperties {
 // ─── Capicola ─────────────────────────────────────────────────────────
 
 export function Capicola({
-  open,
+  open = true,
   anchorRef,
   audioSrc,
   words: wordsProp,
   text,
   cadence,
+  placement = "anchored",
+  mode = "caption",
   chunking,
   width = "auto",
   align = "center",
@@ -182,6 +184,13 @@ export function Capicola({
   onEnded,
   className,
 }: CapicolaProps) {
+  // Placement: "anchored" is the classic fixed overlay positioned against
+  // `anchorRef`; "inline" is a normal in-flow block. All anchor-coupled effects
+  // and positioning below are gated on `isAnchored && anchorRef` so the inline
+  // path never touches the (optional) ref. `mode` is consumed by later phases;
+  // the engine (word track/measure/chunk/theme) is identical for both.
+  void mode
+  const isAnchored = placement === "anchored"
   // Resolve words: audio mode supplies words directly; cadence mode computes them.
   const resolvedWords = React.useMemo<WordTiming[]>(() => {
     if (wordsProp && wordsProp.length > 0) return wordsProp
@@ -229,7 +238,7 @@ export function Capicola({
   // box width; "auto" = hug content (undefined → no explicit width).
   const [parentWidth, setParentWidth] = React.useState<number | undefined>(undefined)
   React.useEffect(() => {
-    if (!open || width !== "parent") return
+    if (!open || width !== "parent" || !isAnchored || !anchorRef) return
     const parent = anchorRef.current?.parentElement ?? null
     if (!parent) return
     const update = () => setParentWidth(parent.clientWidth)
@@ -237,7 +246,7 @@ export function Capicola({
     const ro = new ResizeObserver(update)
     ro.observe(parent)
     return () => ro.disconnect()
-  }, [open, width, anchorRef])
+  }, [open, width, isAnchored, anchorRef])
 
   const resolvedBoxWidth: number | undefined =
     typeof width === "number" ? width : width === "parent" ? parentWidth : undefined
@@ -245,7 +254,7 @@ export function Capicola({
   // ── Anchor rect (for manual 2-axis positioning) ─────────────────────────────
   const [anchorBox, setAnchorBox] = React.useState<DOMRect | null>(null)
   React.useEffect(() => {
-    if (!open) return
+    if (!open || !isAnchored || !anchorRef) return
     const el = anchorRef.current
     if (!el) return
     const update = () => setAnchorBox(el.getBoundingClientRect())
@@ -260,7 +269,7 @@ export function Capicola({
       window.removeEventListener("scroll", update, true)
       window.removeEventListener("resize", update)
     }
-  }, [open, anchorRef])
+  }, [open, isAnchored, anchorRef])
 
   // ── Width-mode measurement (real DOM widths of the actual font) ─────────────
   const measureRowRef = React.useRef<HTMLDivElement>(null)
@@ -359,10 +368,10 @@ export function Capicola({
   const rootElRef = React.useRef<HTMLDivElement | null>(null)
   const [captionHeight, setCaptionHeight] = React.useState(0)
   useIsomorphicLayoutEffect(() => {
-    if (!open) return
+    if (!open || !isAnchored || !anchorRef) return
     const el = rootElRef.current
     if (el) setCaptionHeight(el.getBoundingClientRect().height)
-  }, [open, resolvedWords, themeVars, fontReady, resolvedBoxWidth])
+  }, [open, isAnchored, anchorRef, resolvedWords, themeVars, fontReady, resolvedBoxWidth])
 
   // During a beat (activeIndex === -1) hold the current page instead of snapping
   // to page 0; only recompute the page when a word is actually active.
@@ -421,18 +430,28 @@ export function Capicola({
   const oy =
     resolvedAnchorY === "top" ? -offset : resolvedAnchorY === "bottom" ? offset : 0
 
-  const rootStyle: React.CSSProperties = {
-    ...themeVars,
-    ...(resolvedBoxWidth !== undefined ? { width: `${resolvedBoxWidth}px` } : null),
-    justifyContent: justify,
-    position: "fixed",
-    left: px,
-    top: py,
-    transform: `translate(calc(${tx}% + ${ox}px), calc(${ty}% + ${oy}px)) translateZ(0)`,
-    zIndex: 9999,
-    // Hide until the webfont is ready AND the anchor is measured (no flash/jump).
-    visibility: fontReady && anchorBox ? "visible" : "hidden",
-  }
+  const rootStyle: React.CSSProperties = isAnchored
+    ? {
+        // Anchored overlay: fixed + positioned against the anchor rect. Hidden
+        // until the webfont is ready AND the anchor is measured (no flash/jump).
+        ...themeVars,
+        ...(resolvedBoxWidth !== undefined ? { width: `${resolvedBoxWidth}px` } : null),
+        justifyContent: justify,
+        position: "fixed",
+        left: px,
+        top: py,
+        transform: `translate(calc(${tx}% + ${ox}px), calc(${ty}% + ${oy}px)) translateZ(0)`,
+        zIndex: 9999,
+        visibility: fontReady && anchorBox ? "visible" : "hidden",
+      }
+    : {
+        // Inline block: no positioning/transform (handled by .cap-root--inline);
+        // it flows where <Capicola> sits. Only gate on the webfont, never the anchor.
+        ...themeVars,
+        ...(resolvedBoxWidth !== undefined ? { width: `${resolvedBoxWidth}px` } : null),
+        justifyContent: justify,
+        visibility: fontReady ? "visible" : "hidden",
+      }
 
   // When a box width is set the page wraps to lines; otherwise it's a single row.
   const trackStyle: React.CSSProperties =
@@ -449,7 +468,9 @@ export function Capicola({
   const caption = (
     <div
       ref={rootElRef}
-      className={["cap-root", className].filter(Boolean).join(" ")}
+      className={["cap-root", isAnchored ? null : "cap-root--inline", className]
+        .filter(Boolean)
+        .join(" ")}
       style={rootStyle}
       role="group"
       aria-label={captionText}
@@ -497,7 +518,11 @@ export function Capicola({
     <>
       {/* Hidden audio element (audio mode only) */}
       {hasAudio && <audio ref={audioRef} src={audioSrc} preload="auto" aria-hidden />}
-      {typeof document !== "undefined" && createPortal(caption, document.body)}
+      {/* Anchored: portal into document.body as a fixed overlay. Inline: render
+          the caption in-flow, right where <Capicola> sits in the tree. */}
+      {isAnchored
+        ? typeof document !== "undefined" && createPortal(caption, document.body)
+        : caption}
     </>
   )
 }

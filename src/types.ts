@@ -188,11 +188,57 @@ export interface CaptionTheme {
  */
 export type CaptionPreset = "box" | "color" | "bubble" | "plain"
 
+/**
+ * Where the caption/quote renders:
+ *  - "anchored" (default): the classic overlay — portaled into `document.body`,
+ *    `position: fixed`, positioned against `anchorRef` (backward-compatible).
+ *  - "inline": a normal in-flow block (`position: relative`) rendered where
+ *    `<Capicola>` sits in the tree; `anchorRef` is ignored.
+ */
+export type CaptionPlacement = "anchored" | "inline"
+
+/**
+ * What content the engine sweeps:
+ *  - "caption" (default): the rolling word-by-word caption (the classic behavior).
+ *  - "quote": a featured-quote reel — the whole quote shows at once, the highlight
+ *    sweeps only the quote words, a separately-styled author stays static, and the
+ *    reel auto-cycles through `quotes` (see QuoteOptions).
+ */
+export type CaptionMode = "caption" | "quote"
+
+/** A single featured quote for `mode="quote"`. */
+export interface Quote {
+  /** The quote body — the words the highlight sweeps across. */
+  text: string
+  /** Optional attribution. Rendered as its own static element, never highlighted. */
+  author?: string
+}
+
+/**
+ * Tuning for the quote reel (`mode="quote"`). All fields optional; defaults keep
+ * the reference look. The open quote, close quote, and author separator are each
+ * individually configurable and may be set to "" (empty string) to render none.
+ */
+export interface QuoteOptions {
+  /** Extra dwell on the author after a quote's sweep finishes, ms. Default 1600. */
+  authorPauseMs?: number
+  /** Auto-cycle and loop back to the first quote after the last. Default true. */
+  loop?: boolean
+  /** Dwell before looping from the last quote back to the first, ms. Default = authorPauseMs. */
+  loopPauseMs?: number
+  /** Opening quotation mark wrapped around the quote text. "" = none. Default "“". */
+  openQuote?: string
+  /** Closing quotation mark wrapped around the quote text. "" = none. Default "”". */
+  closeQuote?: string
+  /** Separator prepended to the author attribution. "" = none. Default "— ". */
+  authorSeparator?: string
+}
+
 export interface CapicolaProps {
-  /** Mounts + plays when true; resets/hides when false. */
-  open: boolean
-  /** Element the caption is positioned against. */
-  anchorRef: React.RefObject<HTMLElement | null>
+  /** Mounts + plays when true; resets/hides when false. Default true. */
+  open?: boolean
+  /** Element the caption is positioned against. Required (and only used) when `placement="anchored"`. */
+  anchorRef?: React.RefObject<HTMLElement | null>
 
   // ── Audio mode: provide BOTH audioSrc and words (e.g. from the caption CLI).
   audioSrc?: string
@@ -202,6 +248,19 @@ export interface CapicolaProps {
   text?: string
   cadence?: CadenceOptions
 
+  /** Where the caption renders: overlay anchored to `anchorRef`, or in-flow inline. Default "anchored". */
+  placement?: CaptionPlacement
+  /** What the engine sweeps: the rolling caption, or the featured-quote reel. Default "caption". */
+  mode?: CaptionMode
+  /** The featured quotes for `mode="quote"`. The reel cycles through these in order. */
+  quotes?: Quote[]
+  /**
+   * Aesthetic overrides for the author attribution in `mode="quote"`. Same token
+   * shape as `appearance`, mapped to parallel `--cap-author-*` CSS variables.
+   */
+  authorAppearance?: CaptionTheme
+  /** Tuning for the quote reel (pauses, looping, quotation marks, separator). */
+  quote?: QuoteOptions
   /** How words are grouped into pages (see ChunkingOptions). Default: pause-based, maxWords 4. */
   chunking?: ChunkingOptions
   /** Caption box width source. Default "auto" (hug content). */

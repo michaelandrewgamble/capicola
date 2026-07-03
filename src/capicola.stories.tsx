@@ -601,8 +601,9 @@ const meta: Meta<typeof Capicola> = {
 export default meta
 type Story = StoryObj<typeof Capicola>
 
-export const Playground: StoryObj<Args & Partial<React.ComponentProps<typeof Capicola>>> =
-  {
+export const Playground: StoryObj<
+  Args & Partial<Omit<React.ComponentProps<typeof Capicola>, keyof Args>>
+> = {
     name: "Playground",
     parameters: { controls: { sort: "none" } },
     args: {

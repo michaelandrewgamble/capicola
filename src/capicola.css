@@ -86,6 +86,20 @@
   white-space: nowrap;
 }
 
+/* ─── inline placement — a normal in-flow block, not a fixed overlay ────────────
+   Rendered where <Capicola> sits in the tree (no portal). Keep position:relative
+   so the absolute .cap-measure row still positions against this box; the caption
+   is real, selectable text here (not an overlay), so re-enable pointer/selection
+   and undo the overlay-only transform. */
+.cap-root--inline {
+  position: relative;
+  pointer-events: auto;
+  user-select: text;
+  white-space: normal;
+  display: flex;
+  transform: none;
+}
+
 /* ─── page (chunk) — a fixed group of words; highlight sweeps across it ──────── */
 
 .cap-track {
