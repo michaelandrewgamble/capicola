@@ -49,7 +49,7 @@ function Stage({
       }}
     >
       <div
-        ref={anchorRef}
+        ref={anchorRef as React.RefObject<HTMLDivElement>}
         style={{
           padding: "10px 20px",
           background: "#0f3460cc",
