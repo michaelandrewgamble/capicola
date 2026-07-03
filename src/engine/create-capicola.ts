@@ -456,9 +456,11 @@ export function createCapicola(
     }
     positionAndReveal()
 
-    // Play on open: caption mode autoplays now; quote mode holds the sweep until the
-    // font gate reveals the caption (driveQuoteSweep on fontReady).
-    if (isOpen() && !isQuote()) driver!.play()
+    // Play on open — but hold the sweep until the caption is actually revealed
+    // (fontReady), so the first words aren't swept away behind the font-load gate.
+    // The slow path is started from onFontsReady; this covers the fonts-already-loaded
+    // fast path (awaitFonts fired onFontsReady synchronously above).
+    if (isOpen() && !isQuote() && fontReady) driver!.play()
     scheduleDwell()
 
     placed = true
@@ -507,8 +509,10 @@ export function createCapicola(
     commit()
     measureCaptionHeight()
     positionAndReveal()
-    // Now that the caption is revealed, kick the first quote sweep.
+    // Now that the caption is revealed, start the sweep from the first word —
+    // quote mode via the reel re-drive, caption mode directly.
     driveQuoteSweep()
+    if (isOpen() && !isQuote() && driver) driver.play()
   }
 
   // ── update (partial-options diff) ───────────────────────────────────────────
