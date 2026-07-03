@@ -1,5 +1,3 @@
-import type * as React from "react"
-
 /**
  * Capicola — frozen public contract (the "architect's seam").
  *
@@ -88,7 +86,8 @@ export type CaptionAlign = "left" | "center" | "right"
 /**
  * Caption box width source:
  *  - "auto"   → hug the current chunk's content (default; the reference look)
- *  - "parent" → match the width of the anchorRef's PARENT element (live, responsive)
+ *  - "parent" → match the width of the caption's flow container, live/responsive
+ *    (anchored: the anchor's parent element; inline: the element it's mounted in)
  *  - number   → a MAX width in px (box shrinks to content if narrower; `align` positions it)
  */
 export type CaptionWidth = number | "parent" | "auto"
@@ -188,11 +187,67 @@ export interface CaptionTheme {
  */
 export type CaptionPreset = "box" | "color" | "bubble" | "plain"
 
-export interface CapicolaProps {
-  /** Mounts + plays when true; resets/hides when false. */
-  open: boolean
-  /** Element the caption is positioned against. */
-  anchorRef: React.RefObject<HTMLElement | null>
+/**
+ * Where the caption/quote renders:
+ *  - "anchored" (default): the classic overlay — portaled into `document.body`,
+ *    `position: fixed`, positioned against `anchorRef` (backward-compatible).
+ *  - "inline": a normal in-flow block (`position: relative`) rendered where
+ *    `<Capicola>` sits in the tree; `anchorRef` is ignored.
+ */
+export type CaptionPlacement = "anchored" | "inline"
+
+/**
+ * What content the engine sweeps:
+ *  - "caption" (default): the rolling word-by-word caption (the classic behavior).
+ *  - "quote": a featured-quote reel — the whole quote shows at once, the highlight
+ *    sweeps only the quote words, a separately-styled author stays static, and the
+ *    reel auto-cycles through `quotes` (see QuoteOptions).
+ */
+export type CaptionMode = "caption" | "quote"
+
+/** A single featured quote for `mode="quote"`. */
+export interface Quote {
+  /** The quote body — the words the highlight sweeps across. */
+  text: string
+  /** Optional attribution. Rendered as its own static element, never highlighted. */
+  author?: string
+}
+
+/**
+ * Tuning for the quote reel (`mode="quote"`). All fields optional; defaults keep
+ * the reference look. The open quote, close quote, and author separator are each
+ * individually configurable and may be set to "" (empty string) to render none.
+ */
+export interface QuoteOptions {
+  /** Extra dwell on the author after a quote's sweep finishes, ms. Default 1600. */
+  authorPauseMs?: number
+  /** Auto-cycle and loop back to the first quote after the last. Default true. */
+  loop?: boolean
+  /** Dwell before looping from the last quote back to the first, ms. Default = authorPauseMs. */
+  loopPauseMs?: number
+  /** Opening quotation mark wrapped around the quote text. "" = none. Default "“". */
+  openQuote?: string
+  /** Closing quotation mark wrapped around the quote text. "" = none. Default "”". */
+  closeQuote?: string
+  /** Separator prepended to the author attribution. "" = none. Default "— ". */
+  authorSeparator?: string
+}
+
+// ── Headless engine contract (React-free) ───────────────────────────────────
+
+/**
+ * Options for the framework-agnostic engine `createCapicola(mountEl, opts)`.
+ *
+ * Field-for-field the same surface as `CapicolaProps`, minus React: the anchor is
+ * a raw `HTMLElement` (`anchorEl`) instead of a `RefObject` (`anchorRef`). The React
+ * wrapper adapts `anchorRef.current → anchorEl`. This interface imports no React and
+ * is what the core `.d.ts` exposes.
+ */
+export interface CapicolaOptions {
+  /** Mounts + plays when true; resets/hides when false. Default true. */
+  open?: boolean
+  /** Element the caption is positioned against. Only used when `placement="anchored"`. */
+  anchorEl?: HTMLElement | null
 
   // ── Audio mode: provide BOTH audioSrc and words (e.g. from the caption CLI).
   audioSrc?: string
@@ -202,6 +257,19 @@ export interface CapicolaProps {
   text?: string
   cadence?: CadenceOptions
 
+  /** Where the caption renders: overlay anchored to `anchorEl`, or in-flow inline. Default "anchored". */
+  placement?: CaptionPlacement
+  /** What the engine sweeps: the rolling caption, or the featured-quote reel. Default "caption". */
+  mode?: CaptionMode
+  /** The featured quotes for `mode="quote"`. The reel cycles through these in order. */
+  quotes?: Quote[]
+  /**
+   * Aesthetic overrides for the author attribution in `mode="quote"`. Same token
+   * shape as `appearance`, mapped to parallel `--cap-author-*` CSS variables.
+   */
+  authorAppearance?: CaptionTheme
+  /** Tuning for the quote reel (pauses, looping, quotation marks, separator). */
+  quote?: QuoteOptions
   /** How words are grouped into pages (see ChunkingOptions). Default: pause-based, maxWords 4. */
   chunking?: ChunkingOptions
   /** Caption box width source. Default "auto" (hug content). */
@@ -228,26 +296,14 @@ export interface CapicolaProps {
   className?: string
 }
 
-// ── Timing-hook contract (consumed by the renderer, implemented in parallel) ──
-
-export interface UseAudioWordSyncArgs {
-  open: boolean
-  /** Already-resolved timings (audio mode: props.words; cadence mode: computeCadence(text)). */
-  words: WordTiming[]
-  /**
-   * Audio mode: ref to the <audio> element. When present, activeIndex is driven
-   * from `audio.currentTime`. When absent, a rAF wall-clock drives it (cadence mode).
-   */
-  audioRef?: React.RefObject<HTMLAudioElement | null>
-  onWordChange?: (index: number, word: WordTiming) => void
-  onEnded?: () => void
-}
-
-export interface UseAudioWordSyncResult {
-  /** Index into `words`, or -1 before the first word / when idle. */
-  activeIndex: number
-  isPlaying: boolean
+/**
+ * Imperative handle returned by `createCapicola`. `update` merges a partial set of
+ * options onto the live instance (re-deriving theme/words/observers as needed);
+ * `destroy` tears down every observer/timer/listener/rAF and removes the DOM.
+ */
+export interface CapicolaInstance {
   play: () => void
   pause: () => void
-  reset: () => void
+  update: (opts: Partial<CapicolaOptions>) => void
+  destroy: () => void
 }

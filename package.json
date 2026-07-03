@@ -1,6 +1,6 @@
 {
   "name": "capicola",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A TikTok/CapCut-style narrated, word-by-word caption component for React, pinned to an anchor element.",
   "type": "module",
   "author": "Michael Gamble",
@@ -36,11 +36,24 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.mjs",
+      "require": "./dist/react.cjs",
+      "default": "./dist/react.mjs"
+    },
+    "./web-component": {
+      "types": "./dist/web-component.d.ts",
+      "import": "./dist/web-component.mjs",
+      "require": "./dist/web-component.cjs",
+      "default": "./dist/web-component.mjs"
+    },
     "./styles.css": "./dist/capicola.css",
     "./package.json": "./package.json"
   },
   "sideEffects": [
-    "**/*.css"
+    "**/*.css",
+    "**/web-component.*"
   ],
   "bin": {
     "capicola-caption": "scripts/caption.mjs"
@@ -71,25 +84,30 @@
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
-    "react": ">=18",
-    "react-dom": ">=18"
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "typescript": "^5",
-    "tsup": "^8",
-    "react": "^19",
-    "react-dom": "^19",
+    "@eslint/js": "^9",
+    "@storybook/addon-docs": "^10",
+    "@storybook/react-vite": "^10",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "storybook": "^10",
-    "@storybook/react-vite": "^10",
-    "@storybook/addon-docs": "^10",
     "@vitejs/plugin-react": "^5",
     "eslint": "^9",
-    "@eslint/js": "^9",
-    "typescript-eslint": "^8",
     "eslint-plugin-react-hooks": "^5",
+    "jsdom": "^25.0.1",
     "prettier": "^3",
+    "react": "^19",
+    "react-dom": "^19",
+    "storybook": "^10",
+    "tsup": "^8",
+    "typescript": "^5",
+    "typescript-eslint": "^8",
     "vitest": "^3"
   },
   "publishConfig": {

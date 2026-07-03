@@ -61,6 +61,31 @@
   --cap-scroll-duration: 150ms;
   --cap-scroll-easing: ease-out;
 
+  /* Quote→quote crossfade (mode="quote"). Defaults to the page-fade tokens so the
+     reel transition matches the rest of the engine; retune or set duration 0 to
+     disable. */
+  --cap-quote-transition-duration: var(--cap-scroll-duration);
+  --cap-quote-transition-easing: var(--cap-scroll-easing);
+
+  /* ── Quote author attribution (mode="quote") ──────────────────────────────────
+     Parallel --cap-author-* family, mirroring the caption tokens but smaller +
+     lighter (the author is secondary to the quote). Overridden per-instance by
+     `authorAppearance` → themeToVars(_, "cap-author"). Colour/stroke/shadow fall
+     back to the caption's own tokens unless the author overrides them. */
+  --cap-author-font-family: var(--cap-font-family);
+  --cap-author-font-weight: 600; /* lighter than the heavy quote body */
+  --cap-author-font-size: 19px; /* smaller than the quote body */
+  --cap-author-letter-spacing: var(--cap-letter-spacing);
+  --cap-author-text-transform: none;
+  --cap-author-text-color: var(--cap-text-color);
+  --cap-author-stroke-color: var(--cap-stroke-color);
+  --cap-author-stroke-width: var(--cap-stroke-width);
+  --cap-author-shadow-color: var(--cap-shadow-color);
+  --cap-author-shadow-blur: var(--cap-shadow-blur);
+  --cap-author-shadow-offset-x: var(--cap-shadow-offset-x);
+  --cap-author-shadow-offset-y: var(--cap-shadow-offset-y);
+  --cap-author-word-gap: var(--cap-word-gap);
+
   /* Overlay caption: no chrome of its own (rendered via createPortal into
      document.body — kill the focus outline + any inherited box). */
   background: transparent;
@@ -84,6 +109,20 @@
   user-select: none;
   /* Clip the rolling window */
   white-space: nowrap;
+}
+
+/* ─── inline placement — a normal in-flow block, not a fixed overlay ────────────
+   Rendered where <Capicola> sits in the tree (no portal). Keep position:relative
+   so the absolute .cap-measure row still positions against this box; the caption
+   is real, selectable text here (not an overlay), so re-enable pointer/selection
+   and undo the overlay-only transform. */
+.cap-root--inline {
+  position: relative;
+  pointer-events: auto;
+  user-select: text;
+  white-space: normal;
+  display: flex;
+  transform: none;
 }
 
 /* ─── page (chunk) — a fixed group of words; highlight sweeps across it ──────── */
@@ -112,6 +151,14 @@
   to {
     opacity: 1;
   }
+}
+
+/* Quote mode (mode="quote"): the reel crossfade (fade the finished quote out,
+   swap, fade the next in) is driven by an opacity transition on the caption ROOT
+   (see quoteCrossfadeStyle), so the whole quote + author fade together. The track
+   itself carries no page-fade — the stable-keyed words swap while hidden. */
+.cap-track--quote {
+  animation: none;
 }
 
 /* Hidden measuring row (width mode): full word styling, out of flow, so we can
@@ -215,6 +262,60 @@
   transform: scale(var(--cap-pop-scale));
 }
 
+/* ─── quote author attribution ───────────────────────────────────────────────
+   The author is its own element (never in the words array), so the highlight can
+   NEVER land on it. It mirrors .cap-word typography + stroke + shadow via the
+   parallel --cap-author-* tokens, but deliberately has NO ::before highlight box
+   and NO active recolour — the author is always visible and static. Any per-quote
+   entrance/crossfade is compositor-only (opacity/transform), driven by the
+   --cap-quote-transition-* tokens; it never reflows. */
+
+.cap-author {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cap-author-word-gap);
+  white-space: nowrap;
+  /* Pixel snap; matches .cap-track. */
+  transform: translateZ(0);
+  /* Compositor-only crossfade hook (opacity/transform only — never colour/size). */
+  transition:
+    opacity var(--cap-quote-transition-duration) var(--cap-quote-transition-easing),
+    transform var(--cap-quote-transition-duration) var(--cap-quote-transition-easing);
+}
+
+.cap-author-word {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Typography (mirrors .cap-word, parallel tokens). */
+  font-family: var(--cap-author-font-family);
+  font-weight: var(--cap-author-font-weight);
+  font-size: var(--cap-author-font-size);
+  letter-spacing: var(--cap-author-letter-spacing);
+  text-transform: var(--cap-author-text-transform);
+  color: var(--cap-author-text-color);
+  line-height: 1.25;
+
+  /* Vector stroke + soft drop shadow, identical technique to .cap-word. */
+  -webkit-text-stroke-width: calc(var(--cap-author-stroke-width) * 2);
+  -webkit-text-stroke-color: var(--cap-author-stroke-color);
+  paint-order: stroke fill;
+  text-shadow: var(--cap-author-shadow-offset-x) var(--cap-author-shadow-offset-y)
+    var(--cap-author-shadow-blur) var(--cap-author-shadow-color);
+}
+
+/* Decorative wrappers (separator / quotation marks) inherit the author face but
+   never carry the stroke box — purely presentational, aria-hidden in the DOM. */
+.cap-author[data-active="true"] {
+  /* The author never recolours or reflows when the sweep completes; only
+     compositor-safe hints (opacity/transform) are permitted on this hook. */
+  opacity: 1;
+}
+
 /* ─── reduced motion overrides ──────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -224,5 +325,9 @@
   .cap-word[data-active="true"]::before {
     /* Hard-cut: no scale pop */
     transform: scale(1);
+  }
+  .cap-author {
+    /* Hard-cut the crossfade/entrance — no animated opacity/transform. */
+    transition: none;
   }
 }
