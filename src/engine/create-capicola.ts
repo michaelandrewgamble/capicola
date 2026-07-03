@@ -440,7 +440,10 @@ export function createCapicola(
     else mountEl.appendChild(renderer.rootEl)
 
     createDriver()
-    fontGate = awaitFonts(computeFontTargets(), onFontsReady)
+    // Only run the font gate if we haven't already released it (fontReady persists
+    // across an open/close cycle — fonts don't unload). Re-running it needlessly on
+    // every reopen re-polls (and can hit the 3s safety cap), stalling a looped reel.
+    if (!fontReady) fontGate = awaitFonts(computeFontTargets(), onFontsReady)
 
     installAnchorObservers()
     installParentWidthObserver()
@@ -495,7 +498,11 @@ export function createCapicola(
     wordWidths = []
     gapWidth = 0
     captionHeight = 0
-    fontReady = false
+    // NOTE: fontReady is intentionally NOT reset — fonts don't unload, so once the
+    // gate has released it stays released across an open/close cycle (matches the
+    // React component, whose fontReady state persisted the `open` toggle). Resetting
+    // it made every loop re-run the font gate (and hit its 3s timeout), stalling the
+    // reel. A genuine font change re-gates via the update() path instead.
     fadingOut = false
     placed = false
   }
