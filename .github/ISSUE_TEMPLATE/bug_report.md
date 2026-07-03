@@ -17,7 +17,7 @@ and the `<Capicola />` props you're using:
 
 ```tsx
 <Capicola
-  // props here
+// props here
 />
 ```
 

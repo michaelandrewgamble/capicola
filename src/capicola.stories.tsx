@@ -167,7 +167,9 @@ function FontCombobox({
             }}
           >
             {filtered.length === 0 && (
-              <li style={{ padding: "6px 10px", color: "#888", fontSize: 13 }}>No fonts found.</li>
+              <li style={{ padding: "6px 10px", color: "#888", fontSize: 13 }}>
+                No fonts found.
+              </li>
             )}
             {filtered.map((o) => (
               <li
@@ -256,10 +258,7 @@ function loadGoogleFonts() {
 }
 
 /** A caption that loops, so the highlight is always visible while tuning. */
-type LoopProps = Omit<
-  React.ComponentProps<typeof Capicola>,
-  "open" | "onEnded"
->
+type LoopProps = Omit<React.ComponentProps<typeof Capicola>, "open" | "onEnded">
 function LoopCallout(props: LoopProps) {
   const [open, setOpen] = React.useState(true)
   return (
@@ -376,7 +375,12 @@ const inline = (o: Record<string, unknown>) =>
     .join(", ")} }`
 
 function usageSnippet(a: Args): string {
-  const cadence = { style: a.style, cps: a.cps, commaPause: a.commaPause, sentencePause: a.sentencePause }
+  const cadence = {
+    style: a.style,
+    cps: a.cps,
+    commaPause: a.commaPause,
+    sentencePause: a.sentencePause,
+  }
   const chunking = {
     mode: a.mode,
     maxWords: a.maxWords,
@@ -435,7 +439,12 @@ function PlaygroundDemo({
             anchorY={a.anchorY}
             width={a.width}
             align={a.align}
-            cadence={{ style: a.style, cps: a.cps, commaPause: a.commaPause, sentencePause: a.sentencePause }}
+            cadence={{
+              style: a.style,
+              cps: a.cps,
+              commaPause: a.commaPause,
+              sentencePause: a.sentencePause,
+            }}
             chunking={{
               mode: a.mode,
               maxWords: a.maxWords,
@@ -451,7 +460,15 @@ function PlaygroundDemo({
       </Stage>
 
       {/* Config: collapsed by default so it never crowds out the preview. */}
-      <div style={{ width: 480, maxWidth: "100%", display: "flex", gap: 8, alignItems: "center" }}>
+      <div
+        style={{
+          width: 480,
+          maxWidth: "100%",
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+        }}
+      >
         <CopyButton text={snippet} label="Copy config" />
         <button
           onClick={() => setShowCode((v) => !v)}
@@ -502,7 +519,10 @@ function PlaygroundDemo({
 const cat = (category: string) => ({ table: { category } })
 // Real component props: documented but not interactively controlled here (the
 // curated controls above drive them), and grouped to the bottom of the table.
-const apiProp = () => ({ control: false as const, table: { category: "Component props" } })
+const apiProp = () => ({
+  control: false as const,
+  table: { category: "Component props" },
+})
 const styleArg = (name: string, control: InputType["control"]) => ({
   name,
   control,
@@ -519,11 +539,25 @@ const PRESET_FONTS: Record<CaptionPreset, { fontFamily: string; fontWeight: numb
 
 // The Style-control keys — changing any of these auto-switches the preset to "custom".
 const STYLE_KEYS = [
-  "fontFamily", "fontWeight",
-  "fontSizePx", "textColor", "fontOpacity", "strokeColor", "strokeWidthPx",
-  "strokeOpacity", "shadowColor", "shadowBlurPx", "shadowDistancePx",
-  "shadowOpacity", "wordBoxColor", "wordBoxOpacity", "backgroundOn",
-  "backgroundColor", "backgroundOpacity", "letterSpacingEm", "wordGapEm",
+  "fontFamily",
+  "fontWeight",
+  "fontSizePx",
+  "textColor",
+  "fontOpacity",
+  "strokeColor",
+  "strokeWidthPx",
+  "strokeOpacity",
+  "shadowColor",
+  "shadowBlurPx",
+  "shadowDistancePx",
+  "shadowOpacity",
+  "wordBoxColor",
+  "wordBoxOpacity",
+  "backgroundOn",
+  "backgroundColor",
+  "backgroundOpacity",
+  "letterSpacingEm",
+  "wordGapEm",
 ] as const
 
 const meta: Meta<typeof Capicola> = {
@@ -535,129 +569,214 @@ const meta: Meta<typeof Capicola> = {
 export default meta
 type Story = StoryObj<typeof Capicola>
 
-export const Playground: StoryObj<Args & Partial<React.ComponentProps<typeof Capicola>>> = {
-  name: "Playground",
-  parameters: { controls: { sort: "none" } },
-  args: {
-    preset: "box",
-    fontFamily: "Barlow Condensed",
-    fontWeight: 900,
-    fontSizePx: 30,
-    textColor: "#ffffff",
-    fontOpacity: 1,
-    strokeColor: "#000000",
-    strokeWidthPx: 3,
-    strokeOpacity: 0.95,
-    shadowColor: "#000000",
-    shadowBlurPx: 5,
-    shadowDistancePx: 4,
-    shadowOpacity: 0.55,
-    wordBoxColor: "#e62e64",
-    wordBoxOpacity: 1,
-    backgroundOn: false,
-    backgroundColor: "#000000",
-    backgroundOpacity: 0.6,
-    letterSpacingEm: 0.02,
-    wordGapEm: 0.62,
-    mode: "pause",
-    maxWords: 4,
-    maxLines: 2,
-    gapThreshold: 0.5,
-    breakOnPunctuation: true,
-    anchorX: "center",
-    anchorY: "top",
-    width: "auto",
-    align: "center",
-    style: "reading",
-    cps: 15,
-    commaPause: 0.8,
-    sentencePause: 0.8,
-  },
-  argTypes: {
-    // Preset (first) — pick a look, or "custom" to hand-tune with the Style controls.
-    preset: { control: "select", options: ["box", "color", "bubble", "plain", "custom"], ...cat("Preset") },
-    // Style — only applied when preset is "custom".
-    // font is chosen via the type-search combobox in the canvas (not a Storybook control)
-    fontFamily: { table: { disable: true } },
-    fontWeight: styleArg("font weight", { type: "range", min: 300, max: 900, step: 100 }),
-    fontSizePx: styleArg("font size", { type: "range", min: 14, max: 64, step: 1 }),
-    textColor: styleArg("font color", "color"),
-    fontOpacity: styleArg("font opacity", { type: "range", min: 0, max: 1, step: 0.05 }),
-    strokeColor: styleArg("stroke color", "color"),
-    strokeWidthPx: styleArg("stroke size", { type: "range", min: 0, max: 8, step: 0.5 }),
-    strokeOpacity: styleArg("stroke opacity", { type: "range", min: 0, max: 1, step: 0.05 }),
-    shadowColor: styleArg("shadow color", "color"),
-    shadowBlurPx: styleArg("shadow blur", { type: "range", min: 0, max: 24, step: 1 }),
-    shadowDistancePx: styleArg("shadow distance", { type: "range", min: 0, max: 24, step: 1 }),
-    shadowOpacity: styleArg("shadow opacity", { type: "range", min: 0, max: 1, step: 0.05 }),
-    wordBoxColor: styleArg("word box color", "color"),
-    wordBoxOpacity: styleArg("word box opacity", { type: "range", min: 0, max: 1, step: 0.05 }),
-    backgroundOn: styleArg("background box", "boolean"),
-    backgroundColor: styleArg("background color", "color"),
-    backgroundOpacity: styleArg("background opacity", { type: "range", min: 0, max: 1, step: 0.05 }),
-    letterSpacingEm: styleArg("letter spacing", { type: "range", min: -0.02, max: 0.12, step: 0.005 }),
-    wordGapEm: styleArg("word gap", { type: "range", min: 0, max: 1, step: 0.02 }),
-    // Chunking
-    mode: { control: "inline-radio", options: ["pause", "width"], ...cat("Chunking") },
-    maxWords: { control: { type: "range", min: 1, max: 10, step: 1 }, ...cat("Chunking") },
-    maxLines: { control: { type: "range", min: 1, max: 3, step: 1 }, ...cat("Chunking") },
-    gapThreshold: { control: { type: "range", min: 0.1, max: 1.5, step: 0.05 }, ...cat("Chunking") },
-    breakOnPunctuation: { control: "boolean", ...cat("Chunking") },
-    // Layout
-    anchorX: { control: "inline-radio", options: ["left", "center", "right"], ...cat("Layout") },
-    anchorY: { control: "inline-radio", options: ["top", "middle", "bottom", "auto"], ...cat("Layout") },
-    width: { control: "select", options: ["auto", "parent", 280, 420], ...cat("Layout") },
-    align: { control: "inline-radio", options: ["left", "center", "right"], ...cat("Layout") },
-    // Cadence (last)
-    style: { control: "inline-radio", options: ["reading", "speech"], ...cat("Cadence") },
-    cps: { control: { type: "range", min: 10, max: 30, step: 1 }, ...cat("Cadence") },
-    commaPause: { control: { type: "range", min: 0, max: 1.2, step: 0.02 }, ...cat("Cadence") },
-    sentencePause: { control: { type: "range", min: 0, max: 1.5, step: 0.05 }, ...cat("Cadence") },
-    // Real component props — pushed to a group at the bottom, no dead controls.
-    open: apiProp(),
-    anchorRef: apiProp(),
-    audioSrc: apiProp(),
-    words: apiProp(),
-    text: apiProp(),
-    cadence: apiProp(),
-    chunking: apiProp(),
-    offset: apiProp(),
-    appearance: apiProp(),
-    onWordChange: apiProp(),
-    onEnded: apiProp(),
-    className: apiProp(),
-  },
-  render: function Render() {
-    const [a, updateArgs] = useArgs<Args>()
-    const prevRef = React.useRef<Args | null>(null)
-    // Set true when WE change the font (preset population), so the resulting arg
-    // change isn't mistaken for a user edit that would flip preset → custom.
-    const skipNextRef = React.useRef(false)
-    React.useEffect(() => {
-      const prev = prevRef.current
-      prevRef.current = a
+export const Playground: StoryObj<Args & Partial<React.ComponentProps<typeof Capicola>>> =
+  {
+    name: "Playground",
+    parameters: { controls: { sort: "none" } },
+    args: {
+      preset: "box",
+      fontFamily: "Barlow Condensed",
+      fontWeight: 900,
+      fontSizePx: 30,
+      textColor: "#ffffff",
+      fontOpacity: 1,
+      strokeColor: "#000000",
+      strokeWidthPx: 3,
+      strokeOpacity: 0.95,
+      shadowColor: "#000000",
+      shadowBlurPx: 5,
+      shadowDistancePx: 4,
+      shadowOpacity: 0.55,
+      wordBoxColor: "#e62e64",
+      wordBoxOpacity: 1,
+      backgroundOn: false,
+      backgroundColor: "#000000",
+      backgroundOpacity: 0.6,
+      letterSpacingEm: 0.02,
+      wordGapEm: 0.62,
+      mode: "pause",
+      maxWords: 4,
+      maxLines: 2,
+      gapThreshold: 0.5,
+      breakOnPunctuation: true,
+      anchorX: "center",
+      anchorY: "top",
+      width: "auto",
+      align: "center",
+      style: "reading",
+      cps: 15,
+      commaPause: 0.8,
+      sentencePause: 0.8,
+    },
+    argTypes: {
+      // Preset (first) — pick a look, or "custom" to hand-tune with the Style controls.
+      preset: {
+        control: "select",
+        options: ["box", "color", "bubble", "plain", "custom"],
+        ...cat("Preset"),
+      },
+      // Style — only applied when preset is "custom".
+      // font is chosen via the type-search combobox in the canvas (not a Storybook control)
+      fontFamily: { table: { disable: true } },
+      fontWeight: styleArg("font weight", {
+        type: "range",
+        min: 300,
+        max: 900,
+        step: 100,
+      }),
+      fontSizePx: styleArg("font size", { type: "range", min: 14, max: 64, step: 1 }),
+      textColor: styleArg("font color", "color"),
+      fontOpacity: styleArg("font opacity", {
+        type: "range",
+        min: 0,
+        max: 1,
+        step: 0.05,
+      }),
+      strokeColor: styleArg("stroke color", "color"),
+      strokeWidthPx: styleArg("stroke size", {
+        type: "range",
+        min: 0,
+        max: 8,
+        step: 0.5,
+      }),
+      strokeOpacity: styleArg("stroke opacity", {
+        type: "range",
+        min: 0,
+        max: 1,
+        step: 0.05,
+      }),
+      shadowColor: styleArg("shadow color", "color"),
+      shadowBlurPx: styleArg("shadow blur", { type: "range", min: 0, max: 24, step: 1 }),
+      shadowDistancePx: styleArg("shadow distance", {
+        type: "range",
+        min: 0,
+        max: 24,
+        step: 1,
+      }),
+      shadowOpacity: styleArg("shadow opacity", {
+        type: "range",
+        min: 0,
+        max: 1,
+        step: 0.05,
+      }),
+      wordBoxColor: styleArg("word box color", "color"),
+      wordBoxOpacity: styleArg("word box opacity", {
+        type: "range",
+        min: 0,
+        max: 1,
+        step: 0.05,
+      }),
+      backgroundOn: styleArg("background box", "boolean"),
+      backgroundColor: styleArg("background color", "color"),
+      backgroundOpacity: styleArg("background opacity", {
+        type: "range",
+        min: 0,
+        max: 1,
+        step: 0.05,
+      }),
+      letterSpacingEm: styleArg("letter spacing", {
+        type: "range",
+        min: -0.02,
+        max: 0.12,
+        step: 0.005,
+      }),
+      wordGapEm: styleArg("word gap", { type: "range", min: 0, max: 1, step: 0.02 }),
+      // Chunking
+      mode: { control: "inline-radio", options: ["pause", "width"], ...cat("Chunking") },
+      maxWords: {
+        control: { type: "range", min: 1, max: 10, step: 1 },
+        ...cat("Chunking"),
+      },
+      maxLines: {
+        control: { type: "range", min: 1, max: 3, step: 1 },
+        ...cat("Chunking"),
+      },
+      gapThreshold: {
+        control: { type: "range", min: 0.1, max: 1.5, step: 0.05 },
+        ...cat("Chunking"),
+      },
+      breakOnPunctuation: { control: "boolean", ...cat("Chunking") },
+      // Layout
+      anchorX: {
+        control: "inline-radio",
+        options: ["left", "center", "right"],
+        ...cat("Layout"),
+      },
+      anchorY: {
+        control: "inline-radio",
+        options: ["top", "middle", "bottom", "auto"],
+        ...cat("Layout"),
+      },
+      width: {
+        control: "select",
+        options: ["auto", "parent", 280, 420],
+        ...cat("Layout"),
+      },
+      align: {
+        control: "inline-radio",
+        options: ["left", "center", "right"],
+        ...cat("Layout"),
+      },
+      // Cadence (last)
+      style: {
+        control: "inline-radio",
+        options: ["reading", "speech"],
+        ...cat("Cadence"),
+      },
+      cps: { control: { type: "range", min: 10, max: 30, step: 1 }, ...cat("Cadence") },
+      commaPause: {
+        control: { type: "range", min: 0, max: 1.2, step: 0.02 },
+        ...cat("Cadence"),
+      },
+      sentencePause: {
+        control: { type: "range", min: 0, max: 1.5, step: 0.05 },
+        ...cat("Cadence"),
+      },
+      // Real component props — pushed to a group at the bottom, no dead controls.
+      open: apiProp(),
+      anchorRef: apiProp(),
+      audioSrc: apiProp(),
+      words: apiProp(),
+      text: apiProp(),
+      cadence: apiProp(),
+      chunking: apiProp(),
+      offset: apiProp(),
+      appearance: apiProp(),
+      onWordChange: apiProp(),
+      onEnded: apiProp(),
+      className: apiProp(),
+    },
+    render: function Render() {
+      const [a, updateArgs] = useArgs<Args>()
+      const prevRef = React.useRef<Args | null>(null)
+      // Set true when WE change the font (preset population), so the resulting arg
+      // change isn't mistaken for a user edit that would flip preset → custom.
+      const skipNextRef = React.useRef(false)
+      React.useEffect(() => {
+        const prev = prevRef.current
+        prevRef.current = a
 
-      // On mount or when the preset changes → reflect that preset's font.
-      if (!prev || a.preset !== prev.preset) {
-        const f = a.preset !== "custom" ? PRESET_FONTS[a.preset] : null
-        if (f && (a.fontFamily !== f.fontFamily || a.fontWeight !== f.fontWeight)) {
-          skipNextRef.current = true
-          updateArgs({ fontFamily: f.fontFamily, fontWeight: f.fontWeight })
+        // On mount or when the preset changes → reflect that preset's font.
+        if (!prev || a.preset !== prev.preset) {
+          const f = a.preset !== "custom" ? PRESET_FONTS[a.preset] : null
+          if (f && (a.fontFamily !== f.fontFamily || a.fontWeight !== f.fontWeight)) {
+            skipNextRef.current = true
+            updateArgs({ fontFamily: f.fontFamily, fontWeight: f.fontWeight })
+          }
+          return
         }
-        return
-      }
 
-      if (a.preset === "custom") return
-      if (skipNextRef.current) {
-        skipNextRef.current = false
-        return
-      }
-      // A Style control changed while on a named preset → switch to custom.
-      if (STYLE_KEYS.some((k) => a[k] !== prev[k])) updateArgs({ preset: "custom" })
-    }, [a, updateArgs])
-    return <PlaygroundDemo a={a} updateArgs={updateArgs} />
-  },
-}
+        if (a.preset === "custom") return
+        if (skipNextRef.current) {
+          skipNextRef.current = false
+          return
+        }
+        // A Style control changed while on a named preset → switch to custom.
+        if (STYLE_KEYS.some((k) => a[k] !== prev[k])) updateArgs({ preset: "custom" })
+      }, [a, updateArgs])
+      return <PlaygroundDemo a={a} updateArgs={updateArgs} />
+    },
+  }
 
 // ─── quick-look presets ─────────────────────────────────────────────────────────
 
@@ -676,15 +795,31 @@ function Quick({ preset, ...rest }: { preset: CaptionPreset } & Partial<LoopProp
   )
 }
 
-export const PresetBox: Story = { name: "Preset: box (pink word box)", render: () => <Quick preset="box" /> }
-export const PresetColor: Story = { name: "Preset: color (gold active word)", render: () => <Quick preset="color" /> }
-export const PresetBubble: Story = { name: "Preset: bubble (translucent line box)", render: () => <Quick preset="bubble" /> }
-export const PresetPlain: Story = { name: "Preset: plain (no highlight)", render: () => <Quick preset="plain" /> }
+export const PresetBox: Story = {
+  name: "Preset: box (pink word box)",
+  render: () => <Quick preset="box" />,
+}
+export const PresetColor: Story = {
+  name: "Preset: color (gold active word)",
+  render: () => <Quick preset="color" />,
+}
+export const PresetBubble: Story = {
+  name: "Preset: bubble (translucent line box)",
+  render: () => <Quick preset="bubble" />,
+}
+export const PresetPlain: Story = {
+  name: "Preset: plain (no highlight)",
+  render: () => <Quick preset="plain" />,
+}
 
 export const TwoLines: Story = {
   name: "Two lines (width mode, CapCut 2-line cap)",
   render: () => (
-    <Quick preset="box" width="parent" chunking={{ mode: "width", maxWords: 16, maxLines: 2 }} />
+    <Quick
+      preset="box"
+      width="parent"
+      chunking={{ mode: "width", maxWords: 16, maxLines: 2 }}
+    />
   ),
 }
 

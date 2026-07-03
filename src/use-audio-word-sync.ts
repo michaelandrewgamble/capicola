@@ -151,18 +151,21 @@ export function useAudioWordSync({
     const audio = audioRefRef.current?.current
 
     if (audio) {
-      audio.play().then(() => {
-        endedFiredRef.current = false
-        setIsPlaying(true)
-        // Kick off the loop if not already running.
-        if (rafRef.current === null) {
-          rafRef.current = requestAnimationFrame(tick)
-        }
-      }).catch(() => {
-        // Autoplay blocked — roll back to idle state.
-        cancelRaf()
-        setIsPlaying(false)
-      })
+      audio
+        .play()
+        .then(() => {
+          endedFiredRef.current = false
+          setIsPlaying(true)
+          // Kick off the loop if not already running.
+          if (rafRef.current === null) {
+            rafRef.current = requestAnimationFrame(tick)
+          }
+        })
+        .catch(() => {
+          // Autoplay blocked — roll back to idle state.
+          cancelRaf()
+          setIsPlaying(false)
+        })
       return
     } else {
       // Cadence mode: stamp wall-clock start, honouring any paused elapsed time.

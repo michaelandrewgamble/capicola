@@ -76,8 +76,8 @@ description and make sure `src/index.ts`'s exports stay in sync.
    - `fix(anchor): correct auto-flip near viewport bottom`
    - `feat(chunking): support width-based multiline pages`
    - `docs(readme): clarify cadence tuning knobs`
-6. Push and open a pull request against `main`. Describe the *why*, not just
-   the *what*, and link any related issue.
+6. Push and open a pull request against `main`. Describe the _why_, not just
+   the _what_, and link any related issue.
 7. Be responsive to review feedback — small, focused PRs merge fastest.
 
 ## Reporting bugs / requesting features

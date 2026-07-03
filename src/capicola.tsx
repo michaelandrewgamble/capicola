@@ -4,12 +4,7 @@ import { createPortal } from "react-dom"
 import { computeCadence } from "./cadence"
 import { chunkWords, findChunkIndex } from "./chunking"
 import { useAudioWordSync } from "./use-audio-word-sync"
-import type {
-  CaptionPreset,
-  CaptionTheme,
-  CapicolaProps,
-  WordTiming,
-} from "./types"
+import type { CaptionPreset, CaptionTheme, CapicolaProps, WordTiming } from "./types"
 
 // useLayoutEffect logs a warning when run on the server (Next.js SSR/RSC). The
 // caption only renders on the client, but this shim keeps the console clean for
@@ -108,32 +103,28 @@ function weightInFace(faceWeight: string, want: number): boolean {
 function themeToVars(theme: CaptionTheme): React.CSSProperties {
   const vars: Record<string, string> = {}
 
-  if (theme.fontFamily !== undefined)
-    vars["--cap-font-family"] = theme.fontFamily
-  if (theme.fontWeight !== undefined)
-    vars["--cap-font-weight"] = String(theme.fontWeight)
-  if (theme.fontSizePx !== undefined)
-    vars["--cap-font-size"] = `${theme.fontSizePx}px`
+  if (theme.fontFamily !== undefined) vars["--cap-font-family"] = theme.fontFamily
+  if (theme.fontWeight !== undefined) vars["--cap-font-weight"] = String(theme.fontWeight)
+  if (theme.fontSizePx !== undefined) vars["--cap-font-size"] = `${theme.fontSizePx}px`
   if (theme.letterSpacingEm !== undefined)
     vars["--cap-letter-spacing"] = `${theme.letterSpacingEm}em`
   if (theme.textTransform !== undefined)
     vars["--cap-text-transform"] = theme.textTransform
-  if (theme.textColor !== undefined)
-    vars["--cap-text-color"] = theme.textColor
+  if (theme.textColor !== undefined) vars["--cap-text-color"] = theme.textColor
 
-  if (theme.strokeColor !== undefined)
-    vars["--cap-stroke-color"] = theme.strokeColor
+  if (theme.strokeColor !== undefined) vars["--cap-stroke-color"] = theme.strokeColor
   if (theme.strokeWidthPx !== undefined)
     vars["--cap-stroke-width"] = `${theme.strokeWidthPx}px`
 
-  if (theme.shadowColor !== undefined)
-    vars["--cap-shadow-color"] = theme.shadowColor
+  if (theme.shadowColor !== undefined) vars["--cap-shadow-color"] = theme.shadowColor
   if (theme.shadowBlurPx !== undefined)
     vars["--cap-shadow-blur"] = `${theme.shadowBlurPx}px`
   if (theme.shadowDistancePx !== undefined && theme.shadowAngleDeg !== undefined) {
     const rad = (theme.shadowAngleDeg * Math.PI) / 180
-    vars["--cap-shadow-offset-x"] = `${Math.round(Math.cos(rad) * theme.shadowDistancePx)}px`
-    vars["--cap-shadow-offset-y"] = `${Math.round(Math.sin(rad) * theme.shadowDistancePx)}px`
+    vars["--cap-shadow-offset-x"] =
+      `${Math.round(Math.cos(rad) * theme.shadowDistancePx)}px`
+    vars["--cap-shadow-offset-y"] =
+      `${Math.round(Math.sin(rad) * theme.shadowDistancePx)}px`
   } else if (theme.shadowDistancePx !== undefined) {
     vars["--cap-shadow-offset-y"] = `${theme.shadowDistancePx}px`
   }
@@ -160,15 +151,12 @@ function themeToVars(theme: CaptionTheme): React.CSSProperties {
   if (theme.backgroundRadiusPx !== undefined)
     vars["--cap-background-radius"] = `${theme.backgroundRadiusPx}px`
 
-  if (theme.popScale !== undefined)
-    vars["--cap-pop-scale"] = String(theme.popScale)
+  if (theme.popScale !== undefined) vars["--cap-pop-scale"] = String(theme.popScale)
   if (theme.popDurationMs !== undefined)
     vars["--cap-pop-duration"] = `${theme.popDurationMs}ms`
-  if (theme.popEasing !== undefined)
-    vars["--cap-pop-easing"] = theme.popEasing
+  if (theme.popEasing !== undefined) vars["--cap-pop-easing"] = theme.popEasing
 
-  if (theme.wordGapEm !== undefined)
-    vars["--cap-word-gap"] = `${theme.wordGapEm}em`
+  if (theme.wordGapEm !== undefined) vars["--cap-word-gap"] = `${theme.wordGapEm}em`
 
   return vars as React.CSSProperties
 }
@@ -239,9 +227,7 @@ export function Capicola({
   // ── Box width resolution ────────────────────────────────────────────────────
   // "parent" tracks the anchorRef's PARENT element width (live); number = fixed
   // box width; "auto" = hug content (undefined → no explicit width).
-  const [parentWidth, setParentWidth] = React.useState<number | undefined>(
-    undefined,
-  )
+  const [parentWidth, setParentWidth] = React.useState<number | undefined>(undefined)
   React.useEffect(() => {
     if (!open || width !== "parent") return
     const parent = anchorRef.current?.parentElement ?? null
@@ -254,11 +240,7 @@ export function Capicola({
   }, [open, width, anchorRef])
 
   const resolvedBoxWidth: number | undefined =
-    typeof width === "number"
-      ? width
-      : width === "parent"
-        ? parentWidth
-        : undefined
+    typeof width === "number" ? width : width === "parent" ? parentWidth : undefined
 
   // ── Anchor rect (for manual 2-axis positioning) ─────────────────────────────
   const [anchorBox, setAnchorBox] = React.useState<DOMRect | null>(null)
@@ -367,8 +349,7 @@ export function Capicola({
   // ── Chunk into pages ────────────────────────────────────────────────────────
   const chunks = React.useMemo(() => {
     const measure =
-      typeof resolvedBoxWidth === "number" &&
-      wordWidths.length === resolvedWords.length
+      typeof resolvedBoxWidth === "number" && wordWidths.length === resolvedWords.length
         ? { wordWidths, gapWidth, targetWidth: resolvedBoxWidth }
         : undefined
     return chunkWords(resolvedWords, chunking, measure)
@@ -437,7 +418,8 @@ export function Capicola({
   const tx = anchorX === "left" ? -100 : anchorX === "right" ? 0 : -50
   const ty = resolvedAnchorY === "top" ? -100 : resolvedAnchorY === "bottom" ? 0 : -50
   const ox = anchorX === "left" ? -offset : anchorX === "right" ? offset : 0
-  const oy = resolvedAnchorY === "top" ? -offset : resolvedAnchorY === "bottom" ? offset : 0
+  const oy =
+    resolvedAnchorY === "top" ? -offset : resolvedAnchorY === "bottom" ? offset : 0
 
   const rootStyle: React.CSSProperties = {
     ...themeVars,
@@ -458,13 +440,19 @@ export function Capicola({
       ? { width: "100%", flexWrap: "wrap", justifyContent: justify, rowGap: "0.12em" }
       : {}
 
+  // Expose the full caption to assistive tech as a single accessible name,
+  // rather than a chatty aria-live region that re-announces each word/page as
+  // the highlight sweeps. Callers should still caption the underlying media
+  // through the normal accessible channels; this is a visual enhancement.
+  const captionText = resolvedWords.map((w) => w.text).join(" ")
+
   const caption = (
     <div
       ref={rootElRef}
       className={["cap-root", className].filter(Boolean).join(" ")}
       style={rootStyle}
-      aria-live="polite"
-      aria-atomic="false"
+      role="group"
+      aria-label={captionText}
     >
       {/* Hidden measuring row (whenever a box width is set): all words at full
           styling so we can read real per-word widths for line-packing. */}
@@ -478,8 +466,16 @@ export function Capicola({
         </div>
       )}
 
-      {/* Visible page — keyed on chunk index so a new page fades in. */}
-      <div className="cap-track" key={chunkIdx} data-chunk={chunkIdx} style={trackStyle}>
+      {/* Visible page — keyed on chunk index so a new page fades in. The words
+          are a visual presentation of the group's aria-label, so they're hidden
+          from assistive tech to avoid duplicate / fragmented announcements. */}
+      <div
+        className="cap-track"
+        key={chunkIdx}
+        data-chunk={chunkIdx}
+        style={trackStyle}
+        aria-hidden
+      >
         {chunk.words.map((word, i) => {
           const globalIndex = chunk.startIndex + i
           const isActive = globalIndex === activeIndex
@@ -488,7 +484,6 @@ export function Capicola({
               key={`${globalIndex}-${word.text}`}
               className="cap-word"
               data-active={isActive ? "true" : "false"}
-              aria-current={isActive ? "true" : undefined}
             >
               {word.text}
             </span>
@@ -501,9 +496,7 @@ export function Capicola({
   return (
     <>
       {/* Hidden audio element (audio mode only) */}
-      {hasAudio && (
-        <audio ref={audioRef} src={audioSrc} preload="auto" aria-hidden />
-      )}
+      {hasAudio && <audio ref={audioRef} src={audioSrc} preload="auto" aria-hidden />}
       {typeof document !== "undefined" && createPortal(caption, document.body)}
     </>
   )

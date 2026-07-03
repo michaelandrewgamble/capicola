@@ -49,9 +49,7 @@ export function chunkWords(
   const maxLines = Math.max(1, options?.maxLines ?? DEFAULTS.maxLines)
 
   const useLines =
-    !!measure &&
-    measure.targetWidth > 0 &&
-    measure.wordWidths.length === words.length
+    !!measure && measure.targetWidth > 0 && measure.wordWidths.length === words.length
   // With a width constraint the line/word geometry binds; otherwise cap words/line.
   const maxWords = options?.maxWords ?? (useLines ? 16 : 4)
 

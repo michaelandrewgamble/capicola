@@ -32,17 +32,17 @@ all pass. CI (`.github/workflows/ci.yml`) runs these on Node 18/20/22.
 
 ## Architecture map
 
-| File | Responsibility |
-|------|----------------|
-| `src/capicola.tsx` | The component. Portal render, 2-axis anchoring + collision flip, font-load gate, `CaptionTheme` → `--cap-*` inline vars, preset merge. |
-| `src/cadence.ts` | Pure. `computeCadence(text, opts)` — derives per-word timings (reading CPS model + speech prosody model) with punctuation beats. |
-| `src/chunking.ts` | Pure. `chunkWords()` groups words into on-screen pages (pause or width mode, maxLines); `findChunkIndex()` maps active word → page. |
-| `src/use-audio-word-sync.ts` | Hook. Drives the active-word index from an audio element's clock or a wall-clock, via `requestAnimationFrame`. |
-| `src/types.ts` | **Public API contract.** Exported prop/option/theme types. |
-| `src/capicola.css` | All styles + every `--cap-*` custom property default. |
-| `src/index.ts` | Public barrel — the package's entry point. |
-| `src/capicola.stories.tsx` | Storybook playground / theme builder. |
-| `scripts/caption.mjs` | The `capicola-caption` CLI (Node built-ins only). |
+| File                         | Responsibility                                                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/capicola.tsx`           | The component. Portal render, 2-axis anchoring + collision flip, font-load gate, `CaptionTheme` → `--cap-*` inline vars, preset merge. |
+| `src/cadence.ts`             | Pure. `computeCadence(text, opts)` — derives per-word timings (reading CPS model + speech prosody model) with punctuation beats.       |
+| `src/chunking.ts`            | Pure. `chunkWords()` groups words into on-screen pages (pause or width mode, maxLines); `findChunkIndex()` maps active word → page.    |
+| `src/use-audio-word-sync.ts` | Hook. Drives the active-word index from an audio element's clock or a wall-clock, via `requestAnimationFrame`.                         |
+| `src/types.ts`               | **Public API contract.** Exported prop/option/theme types.                                                                             |
+| `src/capicola.css`           | All styles + every `--cap-*` custom property default.                                                                                  |
+| `src/index.ts`               | Public barrel — the package's entry point.                                                                                             |
+| `src/capicola.stories.tsx`   | Storybook playground / theme builder.                                                                                                  |
+| `scripts/caption.mjs`        | The `capicola-caption` CLI (Node built-ins only).                                                                                      |
 
 ## Conventions (match the existing code)
 

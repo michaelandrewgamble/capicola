@@ -32,6 +32,7 @@ npx capicola-caption \
 ```
 
 **Output**
+
 - `my-caption.caption.json` — word-level timings, `audioSrc` pointing to the original file
 
 **Required: WhisperX**
@@ -74,6 +75,7 @@ npx capicola-caption \
 ```
 
 **Output**
+
 - `my-caption.mp3` — synthesized audio
 - `my-caption.speechmarks.jsonl` — raw Polly speech marks (intermediate, keep for debugging)
 - `my-caption.caption.json` — word timings
@@ -109,6 +111,7 @@ npx capicola-caption \
 ```
 
 **Output**
+
 - `my-caption.mp3` — synthesized audio (MP3 44 100 Hz 128 kbps)
 - `my-caption.caption.json` — word timings
 
@@ -127,15 +130,15 @@ export ELEVENLABS_API_KEY=sk_...
 
 ### All options
 
-| Flag | Description |
-|------|-------------|
-| `--from-audio <file>` | Audio file to transcribe with WhisperX |
-| `--tts "<text>"` | Text to synthesize |
-| `--provider <id>` | TTS provider: `polly` or `elevenlabs` |
-| `--voice <id>` | Voice name/ID for the provider |
-| `--name <stem>` | Output file stem (default: derived from input) |
-| `--out <dir>` | Output directory (default: same dir as input, or cwd) |
-| `--help`, `-h` | Print usage |
+| Flag                  | Description                                           |
+| --------------------- | ----------------------------------------------------- |
+| `--from-audio <file>` | Audio file to transcribe with WhisperX                |
+| `--tts "<text>"`      | Text to synthesize                                    |
+| `--provider <id>`     | TTS provider: `polly` or `elevenlabs`                 |
+| `--voice <id>`        | Voice name/ID for the provider                        |
+| `--name <stem>`       | Output file stem (default: derived from input)        |
+| `--out <dir>`         | Output directory (default: same dir as input, or cwd) |
+| `--help`, `-h`        | Print usage                                           |
 
 ---
 
@@ -147,8 +150,8 @@ The emitted JSON matches the `CaptionData` interface exactly:
 {
   "audioSrc": "path/to/narration.mp3",
   "words": [
-    { "text": "Hello",  "start": 0.000, "end": 0.420 },
-    { "text": "world",  "start": 0.440, "end": 0.910 }
+    { "text": "Hello", "start": 0.0, "end": 0.42 },
+    { "text": "world", "start": 0.44, "end": 0.91 }
   ],
   "meta": {
     "generatedAt": "2026-06-30T00:00:00.000Z",
@@ -171,12 +174,12 @@ to run it.
 
 External requirements are **runtime tools / API services**, not npm packages:
 
-| Requirement | Mode | Install |
-|-------------|------|---------|
-| `whisperx` (Python) | `--from-audio` | `pip install whisperx` |
-| `aws` CLI | `--provider polly` | [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) |
-| `ELEVENLABS_API_KEY` | `--provider elevenlabs` | <https://elevenlabs.io> |
-| `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | `--provider polly` | AWS IAM |
+| Requirement                                   | Mode                    | Install                                                                           |
+| --------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------- |
+| `whisperx` (Python)                           | `--from-audio`          | `pip install whisperx`                                                            |
+| `aws` CLI                                     | `--provider polly`      | [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) |
+| `ELEVENLABS_API_KEY`                          | `--provider elevenlabs` | <https://elevenlabs.io>                                                           |
+| `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | `--provider polly`      | AWS IAM                                                                           |
 
 > **Note**: Real execution requires whisperx/python or valid API keys.
 > The script will print clear guidance and exit non-zero when a dependency is

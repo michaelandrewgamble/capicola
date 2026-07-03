@@ -49,6 +49,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Format check
+        run: pnpm format:check
+
       - name: Test
         run: pnpm test:run
 
@@ -60,3 +63,30 @@ jobs:
       - name: Build Storybook
         if: ${{ matrix.node-version != 18 }}
         run: pnpm build-storybook
+
+  # Verify the advertised React 18 peer floor actually typechecks (devDeps pin
+  # React 19, so this overlays the React 18 type packages and runs tsc).
+  react18-types:
+    name: Typecheck against React 18
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Overlay React 18 types
+        run: pnpm add -D react@18 react-dom@18 @types/react@18 @types/react-dom@18
+
+      - name: Typecheck
+        run: pnpm typecheck

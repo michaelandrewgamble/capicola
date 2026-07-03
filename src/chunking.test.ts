@@ -78,7 +78,7 @@ describe("chunkWords — pause mode", () => {
   })
 
   it("breaks after a closing quote/paren following sentence punctuation", () => {
-    const words = [w('done.)', 0, 1), w("next", 1.1, 2)]
+    const words = [w("done.)", 0, 1), w("next", 1.1, 2)]
     const chunks = chunkWords(words)
     expect(chunks).toHaveLength(2)
   })

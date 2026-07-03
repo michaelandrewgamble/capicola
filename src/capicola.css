@@ -15,7 +15,7 @@
 
 .cap-root {
   /* Font */
-  --cap-font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --cap-font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
   --cap-font-weight: 900; /* Barlow Condensed imports 400/600/700/900 — 900 avoids faux-bold + matches the heavy reference */
   --cap-font-size: 30px;
   --cap-letter-spacing: 0.02em;
@@ -34,7 +34,7 @@
 
   /* Active-word highlight box (drawn as a ::before that extends beyond the text,
      so the box padding doesn't inflate word-to-word spacing) */
-  --cap-highlight-color: linear-gradient(180deg, #E62E64 0%, #C4124C 100%);
+  --cap-highlight-color: linear-gradient(180deg, #e62e64 0%, #c4124c 100%);
   --cap-highlight-text-color: #ffffff;
   --cap-highlight-padding-x: 8px;
   --cap-highlight-padding-y: 3px;
@@ -187,7 +187,8 @@
 .cap-word::before {
   content: "";
   position: absolute;
-  inset: calc(var(--cap-highlight-padding-y) * -1) calc(var(--cap-highlight-padding-x) * -1);
+  inset: calc(var(--cap-highlight-padding-y) * -1)
+    calc(var(--cap-highlight-padding-x) * -1);
   border-radius: var(--cap-highlight-radius);
   /* The fill (gradient OR alpha color) is ALWAYS painted; we show/hide it via
      opacity. Transitioning `background` to/from transparent — or between a color
