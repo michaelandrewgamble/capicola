@@ -371,6 +371,10 @@ type Args = {
   quotePlacement: "anchored" | "inline"
   authorPauseMs: number
   loop: boolean
+  // Quote marks + author separator (empty string ⇒ that character is omitted).
+  openQuote: string
+  closeQuote: string
+  authorSeparator: string
   authorFontFamily: string
   authorFontWeight: number
   authorColor: string
@@ -510,7 +514,13 @@ function PlaygroundDemo({
             mode={a.quoteMode}
             placement={a.quotePlacement}
             quotes={QUOTES}
-            quote={{ authorPauseMs: a.authorPauseMs, loop: a.loop }}
+            quote={{
+              authorPauseMs: a.authorPauseMs,
+              loop: a.loop,
+              openQuote: a.openQuote,
+              closeQuote: a.closeQuote,
+              authorSeparator: a.authorSeparator,
+            }}
             authorAppearance={buildAuthorAppearance(a)}
             anchorX={a.anchorX}
             anchorY={a.anchorY}
@@ -690,17 +700,32 @@ export const Playground: StoryObj<
     quotePlacement: "anchored",
     authorPauseMs: 1600,
     loop: true,
+    openQuote: "“",
+    closeQuote: "”",
+    authorSeparator: "— ",
     authorFontFamily: "Inter",
     authorFontWeight: 600,
     authorColor: "#ffffff",
     authorFontSizePx: 18,
   },
   argTypes: {
-    // Preset (first) — pick a look, or "custom" to hand-tune with the Style controls.
+    // Settings (first) — mode, placement, and the preset look.
+    quoteMode: {
+      name: "mode",
+      control: "inline-radio",
+      options: ["caption", "quote"],
+      ...cat("Settings"),
+    },
+    quotePlacement: {
+      name: "placement",
+      control: "inline-radio",
+      options: ["anchored", "inline"],
+      ...cat("Settings"),
+    },
     preset: {
       control: "select",
       options: ["box", "color", "bubble", "plain", "custom"],
-      ...cat("Preset"),
+      ...cat("Settings"),
     },
     // Style — only applied when preset is "custom".
     // font is chosen via the type-search combobox in the canvas (not a Storybook control)
@@ -824,25 +849,21 @@ export const Playground: StoryObj<
       control: { type: "range", min: 0, max: 1.5, step: 0.05 },
       ...cat("Cadence"),
     },
-    // Quote  (labels display as "mode"/"placement"; keys avoid the chunking clash)
-    quoteMode: {
-      name: "mode",
-      control: "inline-radio",
-      options: ["caption", "quote"],
-      ...cat("Quote"),
-    },
-    quotePlacement: {
-      name: "placement",
-      control: "inline-radio",
-      options: ["anchored", "inline"],
-      ...cat("Quote"),
-    },
+    // Quote  (mode="quote" reel — timing, marks, and author styling)
     authorPauseMs: {
       name: "author pause (ms)",
       control: { type: "range", min: 0, max: 4000, step: 100 },
       ...cat("Quote"),
     },
     loop: { control: "boolean", ...cat("Quote") },
+    // Marks + separator: clear the field to omit that character entirely.
+    openQuote: { name: "open quote", control: "text", ...cat("Quote") },
+    closeQuote: { name: "close quote", control: "text", ...cat("Quote") },
+    authorSeparator: {
+      name: "author separator",
+      control: "text",
+      ...cat("Quote"),
+    },
     authorFontFamily: { name: "author font", control: "text", ...cat("Quote") },
     authorFontWeight: {
       name: "author weight",
