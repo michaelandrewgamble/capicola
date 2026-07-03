@@ -163,10 +163,28 @@ export function createRenderer(): Renderer {
     }
   }
 
+  /** Width-mode styles on the track (wrap within the box) — applied at build AND on
+   *  a runtime width change. Without this, quote mode (whose single chunk never
+   *  rebuilds the track) wouldn't pick up a width switched after mount. */
+  function applyTrackWidthStyles(track: HTMLElement, state: RendererState): void {
+    if (state.resolvedBoxWidth !== undefined) {
+      track.style.width = "100%"
+      track.style.flexWrap = "wrap"
+      track.style.justifyContent = justifyOf(state.align)
+      track.style.rowGap = "0.12em"
+    } else {
+      track.style.removeProperty("width")
+      track.style.removeProperty("flex-wrap")
+      track.style.removeProperty("justify-content")
+      track.style.removeProperty("row-gap")
+    }
+  }
+
   function applyWidth(state: RendererState): void {
     if (state.resolvedBoxWidth !== undefined)
       rootEl.style.width = `${state.resolvedBoxWidth}px`
     else rootEl.style.removeProperty("width")
+    if (trackEl) applyTrackWidthStyles(trackEl, state)
   }
 
   function applyAlignment(state: RendererState): void {
@@ -256,12 +274,7 @@ export function createRenderer(): Renderer {
     track.className = state.isQuote ? "cap-track cap-track--quote" : "cap-track"
     track.setAttribute("data-chunk", String(state.chunkIdx))
     track.setAttribute("aria-hidden", "true")
-    if (state.resolvedBoxWidth !== undefined) {
-      track.style.width = "100%"
-      track.style.flexWrap = "wrap"
-      track.style.justifyContent = justifyOf(state.align)
-      track.style.rowGap = "0.12em"
-    }
+    applyTrackWidthStyles(track, state)
     fillTrack(track, state)
     return track
   }

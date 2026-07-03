@@ -276,6 +276,41 @@ describe("createRenderer — swapChunk", () => {
   })
 })
 
+// ── update: width ─────────────────────────────────────────────────────────────
+
+describe("createRenderer — width update", () => {
+  it("applies track wrap when width switches auto→value at runtime in quote mode", () => {
+    // Regression: quote mode uses one fixed chunk, so its track never rebuilds on a
+    // width change — the wrap styles must be (re)applied via applyWidth, not only at
+    // build. Before the fix the quote track stayed nowrap and overflowed the box.
+    const words = [w("alpha"), w("beta"), w("gamma")]
+    const r = createRenderer()
+    const prev = makeState({
+      isQuote: true,
+      resolvedBoxWidth: undefined,
+      resolvedWords: words,
+      chunkWords: words,
+    })
+    r.build(prev)
+    expect(trackOf(r.rootEl).style.width).toBe("") // auto → no track width
+
+    const next = { ...prev, resolvedBoxWidth: 300 }
+    r.update(prev, next)
+
+    const track = trackOf(r.rootEl)
+    expect(r.rootEl.style.width).toBe("300px")
+    expect(track.style.width).toBe("100%")
+    expect(track.style.flexWrap).toBe("wrap")
+
+    // …and switching back to auto strips them.
+    r.update(next, prev)
+    const track2 = trackOf(r.rootEl)
+    expect(r.rootEl.style.width).toBe("")
+    expect(track2.style.width).toBe("")
+    expect(track2.style.flexWrap).toBe("")
+  })
+})
+
 // ── applyPosition ─────────────────────────────────────────────────────────────
 
 describe("createRenderer — applyPosition", () => {
