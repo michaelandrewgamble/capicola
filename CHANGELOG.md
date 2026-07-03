@@ -5,9 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0]
+
+### Changed (breaking)
+
+- **Framework-agnostic core + multi-entry package.** Capicola is now a headless
+  engine with thin adapters. The package root `capicola` exports the engine
+  `createCapicola(el, opts)` + the pure helpers/types (no framework); the React
+  component moved to **`capicola/react`**, and there's a new **`capicola/web-component`**
+  entry (`<capicola-caption>`). **Migration:** change
+  `import { Capicola } from "capicola"` → `import { Capicola } from "capicola/react"`.
+  Same props, same `capicola/styles.css` import.
+- **`react` is now an _optional_ peer dependency** (needed only for `capicola/react`),
+  and **`react-dom` is no longer a dependency** — anchored placement uses
+  `document.body.appendChild` instead of `createPortal`.
 
 ### Added
+
+- **Headless engine** `createCapicola(mountEl, options)` → `{ play, pause, update, destroy }`
+  — drives any element imperatively, no framework. Options mirror the React props
+  (`anchorEl: HTMLElement` in place of `anchorRef`).
+- **`<capicola-caption>` web component** — string props as attributes, object props
+  in JS; **light DOM** by default (both placements, shared stylesheet) with an
+  opt-in self-contained **shadow-DOM** mode (`shadow` attribute, inline only).
 
 - **`placement` axis** (`"anchored" | "inline"`) — render the caption as the
   classic `position: fixed` overlay portaled to `document.body` (anchored, the

@@ -10,7 +10,7 @@
   <a href="https://github.com/michaelandrewgamble/capicola/releases"><img src="https://img.shields.io/github/v/release/michaelandrewgamble/capicola?color=E62E64" alt="Latest release" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/michaelandrewgamble/capicola?color=E62E64" alt="MIT license" /></a>
   <img src="https://img.shields.io/badge/types-included-E62E64?logo=typescript&logoColor=white" alt="TypeScript types included" />
-  <img src="https://img.shields.io/badge/deps-react%20%2B%20react--dom-E62E64" alt="Zero runtime dependencies beyond React" />
+  <img src="https://img.shields.io/badge/core%20deps-zero-E62E64" alt="Zero runtime dependencies in the core engine" />
 </p>
 
 <!-- Once published to npm, add the version / bundle-size badges back:
@@ -20,7 +20,7 @@
 
 ---
 
-**Capicola** is a self-contained React component that renders a narrated, word-by-word caption — the animated karaoke style you see on TikTok and CapCut — and pins it to any anchor element on the page. Feed it plain text and it paces the highlight itself with a research-tuned cadence model; feed it word-level timings plus an audio file and the highlight rides the narration exactly. It ships four ready-made presets, is fully themeable through typed tokens or raw CSS variables, and depends on nothing but React and `react-dom`.
+**Capicola** renders a narrated, word-by-word caption — the animated karaoke style you see on TikTok and CapCut — and pins it to any anchor element (or lays it out inline). Feed it plain text and it paces the highlight itself with a research-tuned cadence model; feed it word-level timings plus an audio file and the highlight rides the narration exactly. It ships four ready-made presets and is fully themeable through typed tokens or raw CSS variables. At its core it's a **framework-agnostic engine** (`createCapicola`) with **zero runtime dependencies**; a React component (`capicola/react`) and a web component (`capicola/web-component`) are thin adapters on top.
 
 <p align="center"><img src="https://raw.githubusercontent.com/michaelandrewgamble/capicola/main/docs/demo.gif" width="720" alt="Capicola cycling through its box, color, bubble, and plain presets" /></p>
 
@@ -37,7 +37,7 @@ Every prop and token is a live control in the [Storybook playground](https://mic
 ## Features
 
 - **Two drive modes** — silent _cadence_ mode (just pass `text`) or synced _audio_ mode (pass `words` + `audioSrc`).
-- **Self-contained** — runtime deps are React and `react-dom` only. No design-system imports, no CSS-in-JS runtime. The component renders through `createPortal` into `document.body`.
+- **Framework-agnostic core** — a headless `createCapicola(el, opts)` engine with **zero runtime dependencies**; ships React and web-component adapters. No design-system imports, no CSS-in-JS runtime.
 - **Themeable, two ways** — a typed `appearance` prop or raw `--cap-*` CSS custom properties. Every token maps 1:1 to a variable.
 - **Four presets** — `box`, `color`, `bubble`, `plain`, each a full bundle of tokens you can still override.
 - **Anti-jitter by design** — the highlight is a paint change over constant padding; the pop is a compositor `transform: scale()`. Nothing reflows per word, ever.
@@ -49,27 +49,27 @@ Every prop and token is a live control in the [Storybook playground](https://mic
 ## Install
 
 ```sh
-# npm
-npm install capicola
-
-# pnpm
-pnpm add capicola
-
-# yarn
-yarn add capicola
+npm install capicola   # or: pnpm add capicola / yarn add capicola
 ```
 
-`react` and `react-dom` are **peer dependencies** (`>=18`). Capicola uses `createPortal`, so both must be present in your app.
+Capicola ships as a **framework-agnostic core + thin adapters**, via subpath exports:
 
-You must also import the stylesheet **once**, anywhere in your app entry:
+| Import                   | What you get                                                                             |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `capicola`               | The headless engine `createCapicola(el, opts)` + the pure functions/types. No framework. |
+| `capicola/react`         | The `<Capicola>` React component.                                                        |
+| `capicola/web-component` | The `<capicola-caption>` custom element (works anywhere).                                |
+| `capicola/styles.css`    | The stylesheet (import once) — every `--cap-*` default.                                  |
+
+`react` is an **optional** peer dependency (`>=18`), needed only for `capicola/react`. There is **no `react-dom`** dependency. Whichever entry you use, import the stylesheet **once** in your app entry:
 
 ```ts
 import "capicola/styles.css"
 ```
 
-The stylesheet ships separately from the JS so you control where it lands in your cascade. It defines every `--cap-*` default (the reference "tiktok-pink" look).
+> **Upgrading from 0.1.x?** The React component moved from the package root to the `/react` subpath: change `import { Capicola } from "capicola"` → `import { Capicola } from "capicola/react"`. Nothing else changed — same props, same CSS import.
 
-## Quickstart
+## Quickstart (React)
 
 ### Cadence mode (no audio)
 
@@ -77,7 +77,7 @@ Pass `text` and Capicola computes per-word timings from its cadence model.
 
 ```tsx
 import { useRef } from "react"
-import { Capicola } from "capicola"
+import { Capicola } from "capicola/react"
 import "capicola/styles.css"
 
 function Example() {
@@ -112,6 +112,42 @@ Pass `words` (word-level timings, in seconds) and an `audioSrc`. The highlight i
 // import caption from "./narration.caption.json"
 // <Capicola open anchorRef={anchor} {...caption} />
 ```
+
+## Framework-agnostic engine (`createCapicola`)
+
+The React component is a thin wrapper over a headless engine that touches the DOM directly — no framework required. Import it from the package root and drive any element:
+
+```ts
+import { createCapicola } from "capicola"
+import "capicola/styles.css"
+
+const cap = createCapicola(document.getElementById("host")!, {
+  text: "This caption paces itself, word by word.",
+  placement: "inline", // or "anchored" with an `anchorEl`
+})
+
+// cap.play() / cap.pause() / cap.update({ preset: "color" }) / cap.destroy()
+```
+
+`createCapicola(mountEl, options)` returns `{ play, pause, update, destroy }`. The options mirror the React props (with `anchorEl: HTMLElement` in place of `anchorRef`). Everything else — presets, `appearance`, quote mode, cadence, chunking — works the same. This is the layer Vue/Svelte/Angular/Solid adapters would build on; the pure `computeCadence`, `chunkWords`, and quote-sequencer helpers are exported from the root too.
+
+## Web component (`<capicola-caption>`)
+
+Drop-in for any framework or plain HTML. Registering the element is a side-effect import:
+
+```ts
+import "capicola/web-component"
+import "capicola/styles.css"
+```
+
+```html
+<capicola-caption
+  text="This caption paces itself, word by word."
+  preset="color"
+></capicola-caption>
+```
+
+String props are attributes (`text`, `mode`, `placement`, `preset`, `width`, `align`, `anchor-x`, `anchor-y`, `offset`); object props are set in JS (`el.quotes = [...]`, `el.appearance = {...}`, `el.anchorEl = ...`). It renders in **light DOM** by default (both placements, uses the global stylesheet); add the `shadow` attribute for a **self-contained shadow root** (styles adopted automatically, inline placement only).
 
 ## Presets
 
@@ -464,7 +500,7 @@ Any font works — set `--cap-font-family` or `appearance.fontFamily` (the `colo
 
 ## Browser support
 
-Capicola targets modern evergreen browsers. The outline is rendered with `-webkit-text-stroke` + `paint-order: stroke fill` (Chromium, Safari, and Firefox all support these). Positioning uses a `createPortal` render into `document.body` with `position: fixed`. Motion respects `prefers-reduced-motion` (the pop and page fade are disabled).
+Capicola targets modern evergreen browsers. The outline is rendered with `-webkit-text-stroke` + `paint-order: stroke fill` (Chromium, Safari, and Firefox all support these). Anchored positioning appends into `document.body` with `position: fixed`. Motion respects `prefers-reduced-motion` (the pop and page fade are disabled).
 
 ## SSR & Next.js
 
@@ -472,7 +508,7 @@ Capicola is a client-side overlay: it measures the DOM and portals into `documen
 
 ## Bundle size & tree-shaking
 
-The component is ~27 kB minified (well under 12 kB gzipped) and ships **ESM + CJS** with `"sideEffects"` set so bundlers tree-shake freely; the stylesheet is a separate `capicola/styles.css` import. The only runtime dependencies are `react` and `react-dom`, which you already have.
+The core engine is small (well under 12 kB gzipped) and ships **ESM + CJS** with `"sideEffects"` set so bundlers tree-shake freely; the stylesheet is a separate `capicola/styles.css` import. The core has **zero runtime dependencies**; the React adapter's only (optional) peer is `react` itself.
 
 ## Stability
 
