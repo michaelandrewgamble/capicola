@@ -86,7 +86,8 @@ export type CaptionAlign = "left" | "center" | "right"
 /**
  * Caption box width source:
  *  - "auto"   → hug the current chunk's content (default; the reference look)
- *  - "parent" → match the width of the anchorRef's PARENT element (live, responsive)
+ *  - "parent" → match the width of the caption's flow container, live/responsive
+ *    (anchored: the anchor's parent element; inline: the element it's mounted in)
  *  - number   → a MAX width in px (box shrinks to content if narrower; `align` positions it)
  */
 export type CaptionWidth = number | "parent" | "auto"

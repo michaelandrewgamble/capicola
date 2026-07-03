@@ -385,17 +385,31 @@ export function createCapicola(
   }
 
   function installParentWidthObserver(): void {
-    if (!isOpen() || (o.width ?? "auto") !== "parent" || !isAnchored() || !o.anchorEl)
-      return
-    const parent = o.anchorEl.parentElement
-    if (!parent) return
+    if (!isOpen() || (o.width ?? "auto") !== "parent") return
+    // The element whose width "parent" tracks:
+    //  - anchored → the anchor's parent (the caption overlays the anchor).
+    //  - inline   → the caption's flow container. mountEl is where the caption
+    //    lives, but the React wrapper's host is `display: contents` (no box), so
+    //    fall through to its parent in that case.
+    let container: Element | null
+    if (isAnchored()) {
+      container = o.anchorEl?.parentElement ?? null
+    } else {
+      container =
+        typeof getComputedStyle !== "undefined" &&
+        getComputedStyle(mountEl).display === "contents"
+          ? mountEl.parentElement
+          : mountEl
+    }
+    if (!container) return
+    const el = container
     const update = () => {
-      parentWidth = parent.clientWidth
+      parentWidth = el.clientWidth
       onWidthResolved()
     }
     update()
     parentRO = new ResizeObserver(update)
-    parentRO.observe(parent)
+    parentRO.observe(el)
   }
 
   function uninstallParentWidthObserver(): void {
