@@ -180,7 +180,7 @@ Set `preset` to pick a named style template, then override any individual token 
 
 `placement` chooses where the caption renders, independent of everything else (preset, mode, drive mode):
 
-- **`"anchored"`** (default) — the classic overlay. Capicola portals into `document.body`, renders `position: fixed`, and positions itself against `anchorRef` with the 3×3 anchor grid and collision-aware flip. This is the original behaviour.
+- **`"anchored"`** (default) — the classic overlay. Capicola appends into `document.body`, renders `position: fixed`, and positions itself against the anchor with the 3×3 anchor grid and collision-aware flip. This is the original behaviour.
 - **`"inline"`** — a normal in-flow block. The caption renders `position: relative` right where `<Capicola>` sits in your tree, participating in layout like any other element. `anchorRef` is ignored, and so are the anchoring props (`anchorX`, `anchorY`, `offset`).
 
 ```tsx
@@ -266,6 +266,8 @@ The author attribution has its own theme, `authorAppearance`, with the exact sam
 ```
 
 ## Props / API reference
+
+The `<Capicola>` props below are also the engine's options — `createCapicola(el, options)` and `<capicola-caption>` take the same surface, except `anchorRef` (a React ref) becomes **`anchorEl`** (a raw `HTMLElement`).
 
 ### `CapicolaProps`
 
@@ -504,7 +506,7 @@ Capicola targets modern evergreen browsers. The outline is rendered with `-webki
 
 ## SSR & Next.js
 
-Capicola is a client-side overlay: it measures the DOM and portals into `document.body`, so it only renders on the client (it returns nothing during SSR and mounts after hydration). In the **Next.js App Router**, import it from a Client Component (add `"use client"` at the top of that file). Layout effects use an isomorphic shim, so there's no `useLayoutEffect`-on-the-server warning. No other configuration is needed.
+Capicola is client-side: it measures the DOM and, for anchored placement, appends into `document.body`, so it only runs on the client (the React wrapper creates the engine in an effect, after hydration). In the **Next.js App Router**, import `capicola/react` from a Client Component (add `"use client"` at the top of that file). No other configuration is needed. The `createCapicola` engine and the `<capicola-caption>` web component are likewise client-only — call/mount them in the browser.
 
 ## Bundle size & tree-shaking
 
