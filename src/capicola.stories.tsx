@@ -6,6 +6,7 @@ import type { InputType } from "storybook/internal/types"
 // when a Style control changes). Provided by Storybook at build time.
 import { useArgs } from "storybook/preview-api"
 import { Capicola } from "./react"
+import { PRESETS } from "./theme"
 import type { CaptionPreset, CaptionTheme, Quote, WordTiming } from "./types"
 
 // Ambient decl: storybook/preview-api resolves at Storybook build time, but not
@@ -659,6 +660,74 @@ const STYLE_KEYS = [
   "wordGapEm",
 ] as const
 
+// Decompose a preset colour token into the Playground's (hex + opacity) pair —
+// presets bake opacity into rgba()/"transparent"; the controls keep them separate.
+function splitColor(
+  c: string | undefined,
+  fallbackHex: string,
+): { hex: string; opacity: number } {
+  if (!c || c === "transparent") return { hex: fallbackHex, opacity: 0 }
+  const m = c.match(/rgba?\(([^)]+)\)/)
+  if (m) {
+    const p = m[1].split(",").map((s) => s.trim())
+    const hex =
+      "#" +
+      p
+        .slice(0, 3)
+        .map((n) => Math.round(parseFloat(n)).toString(16).padStart(2, "0"))
+        .join("")
+    return { hex, opacity: p[3] !== undefined ? parseFloat(p[3]) : 1 }
+  }
+  return { hex: c, opacity: 1 }
+}
+
+// Map a named preset's resolved tokens back onto the Style controls, so the panel
+// always mirrors what the selected preset renders (e.g. the gold active word for
+// "color"). Colours that carry alpha are split into a (color + opacity) pair; a
+// gradient word box has no single-colour control, so it maps to its dominant pink.
+function presetToArgs(preset: CaptionPreset): Partial<Args> {
+  const t = PRESETS[preset]
+  const text = splitColor(t.textColor, "#ffffff")
+  const stroke = splitColor(t.strokeColor, "#000000")
+  const shadow = splitColor(t.shadowColor, "#000000")
+  const box =
+    typeof t.highlightColor === "string" && t.highlightColor.startsWith("linear-gradient")
+      ? { hex: "#e62e64", opacity: 1 }
+      : splitColor(t.highlightColor, "#e62e64")
+  const hasBg = t.backgroundColor !== undefined && t.backgroundColor !== "transparent"
+  const out: Partial<Args> = {
+    fontFamily: PRESET_FONTS[preset].fontFamily,
+    fontWeight: PRESET_FONTS[preset].fontWeight,
+    fontSizePx: t.fontSizePx ?? 30,
+    letterSpacingEm: t.letterSpacingEm ?? 0.02,
+    wordGapEm: t.wordGapEm ?? 0.62,
+    textColor: text.hex,
+    fontOpacity: text.opacity,
+    strokeColor: stroke.hex,
+    strokeWidthPx: t.strokeWidthPx ?? 3,
+    strokeOpacity: stroke.opacity,
+    shadowColor: shadow.hex,
+    shadowBlurPx: t.shadowBlurPx ?? 5,
+    shadowDistancePx: t.shadowDistancePx ?? 4,
+    shadowOpacity: shadow.opacity,
+    wordBoxColor: box.hex,
+    wordBoxOpacity: box.opacity,
+    highlightTextColor: t.highlightTextColor ?? "#ffffff",
+    highlightPaddingXPx: t.highlightPaddingXPx ?? 8,
+    highlightPaddingYPx: t.highlightPaddingYPx ?? 3,
+    highlightRadiusPx: t.highlightRadiusPx ?? 8,
+    backgroundOn: hasBg,
+  }
+  // Only override the background colour/opacity when the preset actually has one,
+  // so toggling "background box" on a boxless preset keeps a usable opacity.
+  if (hasBg) {
+    const bg = splitColor(t.backgroundColor, "#000000")
+    out.backgroundColor = bg.hex
+    out.backgroundOpacity = bg.opacity
+  }
+  return out
+}
+
 const meta: Meta<typeof Capicola> = {
   title: "Components/Capicola",
   component: Capicola,
@@ -939,12 +1008,16 @@ export const Playground: StoryObj<
       const prev = prevRef.current
       prevRef.current = a
 
-      // On mount or when the preset changes → reflect that preset's font.
+      // On mount or when the preset changes → mirror that preset's tokens in the
+      // controls, so the Style panel always reflects what the preset renders (the
+      // gold active word for "color", the bubble background, etc.).
       if (!prev || a.preset !== prev.preset) {
-        const f = a.preset !== "custom" ? PRESET_FONTS[a.preset] : null
-        if (f && (a.fontFamily !== f.fontFamily || a.fontWeight !== f.fontWeight)) {
-          skipNextRef.current = true
-          updateArgs({ fontFamily: f.fontFamily, fontWeight: f.fontWeight })
+        if (a.preset !== "custom") {
+          const next = presetToArgs(a.preset)
+          if ((Object.keys(next) as (keyof Args)[]).some((k) => a[k] !== next[k])) {
+            skipNextRef.current = true
+            updateArgs(next)
+          }
         }
         return
       }
