@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1]
+
+Docs and Storybook only — the library API and runtime are unchanged from `0.2.0`.
+
+### Storybook Playground
+
+- **Active-word fill is now its own control.** `highlightTextColor` (the active
+  word's colour — e.g. the `color` preset's gold) was previously tied to the
+  font-colour control; it's now an independent **active word color** control,
+  plus **word box padding x/y** and **word box radius** for the highlight box.
+- **Controls mirror the selected preset.** Picking a named preset now populates
+  every Style control from that preset's resolved tokens (not just the font), so
+  the panel reflects what's rendered (`color` shows `#FFC53D`, `bubble` its
+  background, etc.). Editing a control still switches the preset to `custom`.
+- **Text-transform controls.** Added a **text transform** select
+  (`uppercase / none / lowercase / capitalize`) to the Style group and an
+  **author text transform** to the Quote group.
+
+### Docs
+
+- Restructured the README (table of contents; Features/Install moved up front;
+  theming screenshots relocated into the Theming section; How-it-works before
+  the API reference).
+- Refreshed the hero GIF (now showcases quote mode + inline placement) and the
+  config-options screenshot (current control set).
+
 ## [0.2.0]
 
 ### Changed (breaking)
