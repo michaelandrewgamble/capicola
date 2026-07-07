@@ -353,6 +353,7 @@ type Args = {
   backgroundOpacity: number
   letterSpacingEm: number
   wordGapEm: number
+  textTransform: "uppercase" | "none" | "lowercase" | "capitalize"
   // Cadence
   style: "reading" | "speech"
   cps: number
@@ -384,6 +385,7 @@ type Args = {
   authorFontWeight: number
   authorColor: string
   authorFontSizePx: number
+  authorTextTransform: "uppercase" | "none" | "lowercase" | "capitalize"
 }
 
 /** Apply an opacity (0–1) to any CSS color → rgba, so color + opacity stay separate
@@ -414,6 +416,7 @@ function buildAppearance(a: Args): CaptionTheme {
     fontFamily: `'${a.fontFamily}', sans-serif`,
     fontWeight: a.fontWeight,
     fontSizePx: a.fontSizePx,
+    textTransform: a.textTransform,
     textColor: withOpacity(a.textColor, a.fontOpacity),
     strokeColor: withOpacity(a.strokeColor, a.strokeOpacity),
     strokeWidthPx: a.strokeWidthPx,
@@ -448,6 +451,7 @@ function buildAuthorAppearance(a: Args): CaptionTheme {
     fontFamily: `'${a.authorFontFamily}', sans-serif`,
     fontWeight: a.authorFontWeight,
     fontSizePx: a.authorFontSizePx,
+    textTransform: a.authorTextTransform,
     textColor: a.authorColor,
   }
 }
@@ -658,6 +662,7 @@ const STYLE_KEYS = [
   "backgroundOpacity",
   "letterSpacingEm",
   "wordGapEm",
+  "textTransform",
 ] as const
 
 // Decompose a preset colour token into the Playground's (hex + opacity) pair —
@@ -701,6 +706,7 @@ function presetToArgs(preset: CaptionPreset): Partial<Args> {
     fontSizePx: t.fontSizePx ?? 30,
     letterSpacingEm: t.letterSpacingEm ?? 0.02,
     wordGapEm: t.wordGapEm ?? 0.62,
+    textTransform: t.textTransform ?? "uppercase",
     textColor: text.hex,
     fontOpacity: text.opacity,
     strokeColor: stroke.hex,
@@ -767,6 +773,7 @@ export const Playground: StoryObj<
     backgroundOpacity: 0.6,
     letterSpacingEm: 0.02,
     wordGapEm: 0.62,
+    textTransform: "uppercase",
     chunkMode: "pause",
     maxWords: 4,
     maxLines: 2,
@@ -791,6 +798,7 @@ export const Playground: StoryObj<
     authorFontWeight: 600,
     authorColor: "#ffffff",
     authorFontSizePx: 18,
+    authorTextTransform: "none",
   },
   argTypes: {
     // Settings (first) — mode, placement, and the preset look.
@@ -821,6 +829,12 @@ export const Playground: StoryObj<
       step: 100,
     }),
     fontSizePx: styleArg("font size", { type: "range", min: 14, max: 64, step: 1 }),
+    textTransform: {
+      name: "text transform",
+      control: "select",
+      options: ["uppercase", "none", "lowercase", "capitalize"],
+      ...cat("Style"),
+    },
     textColor: styleArg("font color", "color"),
     fontOpacity: styleArg("font opacity", {
       type: "range",
@@ -977,6 +991,12 @@ export const Playground: StoryObj<
     authorFontSizePx: {
       name: "author size",
       control: { type: "range", min: 10, max: 40, step: 1 },
+      ...cat("Quote"),
+    },
+    authorTextTransform: {
+      name: "author text transform",
+      control: "select",
+      options: ["uppercase", "none", "lowercase", "capitalize"],
       ...cat("Quote"),
     },
     // Real component props — pushed to a group at the bottom, no dead controls.
