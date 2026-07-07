@@ -343,6 +343,10 @@ type Args = {
   shadowOpacity: number
   wordBoxColor: string
   wordBoxOpacity: number
+  highlightTextColor: string
+  highlightPaddingXPx: number
+  highlightPaddingYPx: number
+  highlightRadiusPx: number
   backgroundOn: boolean
   backgroundColor: string
   backgroundOpacity: number
@@ -419,7 +423,10 @@ function buildAppearance(a: Args): CaptionTheme {
     // transition flicker).
     highlightColor: a.wordBoxColor,
     highlightOpacity: a.wordBoxOpacity,
-    highlightTextColor: withOpacity(a.textColor, a.fontOpacity),
+    highlightTextColor: a.highlightTextColor,
+    highlightPaddingXPx: a.highlightPaddingXPx,
+    highlightPaddingYPx: a.highlightPaddingYPx,
+    highlightRadiusPx: a.highlightRadiusPx,
     letterSpacingEm: a.letterSpacingEm,
     wordGapEm: a.wordGapEm,
     ...(a.backgroundOn
@@ -641,6 +648,10 @@ const STYLE_KEYS = [
   "shadowOpacity",
   "wordBoxColor",
   "wordBoxOpacity",
+  "highlightTextColor",
+  "highlightPaddingXPx",
+  "highlightPaddingYPx",
+  "highlightRadiusPx",
   "backgroundOn",
   "backgroundColor",
   "backgroundOpacity",
@@ -678,6 +689,10 @@ export const Playground: StoryObj<
     shadowOpacity: 0.55,
     wordBoxColor: "#e62e64",
     wordBoxOpacity: 1,
+    highlightTextColor: "#ffffff",
+    highlightPaddingXPx: 8,
+    highlightPaddingYPx: 3,
+    highlightRadiusPx: 8,
     backgroundOn: false,
     backgroundColor: "#000000",
     backgroundOpacity: 0.6,
@@ -777,6 +792,25 @@ export const Playground: StoryObj<
       min: 0,
       max: 1,
       step: 0.05,
+    }),
+    highlightTextColor: styleArg("active word color", "color"),
+    highlightPaddingXPx: styleArg("word box padding x", {
+      type: "range",
+      min: 0,
+      max: 40,
+      step: 1,
+    }),
+    highlightPaddingYPx: styleArg("word box padding y", {
+      type: "range",
+      min: 0,
+      max: 24,
+      step: 1,
+    }),
+    highlightRadiusPx: styleArg("word box radius", {
+      type: "range",
+      min: 0,
+      max: 40,
+      step: 1,
     }),
     backgroundOn: styleArg("background box", "boolean"),
     backgroundColor: styleArg("background color", "color"),
