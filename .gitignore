@@ -5,3 +5,6 @@ storybook-static
 .DS_Store
 coverage
 .turbo
+
+# Local-only asset-regeneration harness (see tools/capture/README.md)
+tools/capture/
