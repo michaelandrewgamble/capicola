@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3]
+
+### Fixed
+
+- **Quote author wraps instead of overflowing.** The attribution (`.cap-author`) was a
+  single non-wrapping line, so a long "Name, Title, Company" would overflow / clip on
+  narrow widths (e.g. a phone-width quote). It's now a centered text block that wraps to
+  more lines when it exceeds the caption width, and still sits on one line when it fits.
+
 ## [0.2.2]
 
 ### Added

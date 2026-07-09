@@ -273,12 +273,12 @@
    --cap-quote-transition-* tokens; it never reflows. */
 
 .cap-author {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: var(--cap-author-word-gap);
-  white-space: nowrap;
+  /* A centered text block (not inline-flex) so a long attribution wraps to more
+     lines on narrow widths instead of overflowing; fits on one line when it can. */
+  display: block;
+  max-width: 100%;
+  text-align: center;
+  white-space: normal;
   /* Pixel snap; matches .cap-track. */
   transform: translateZ(0);
   /* Compositor-only crossfade hook (opacity/transform only — never colour/size). */
@@ -289,9 +289,9 @@
 
 .cap-author-word {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  /* Inline (not inline-flex) so the attribution text wraps naturally when it
+     exceeds the caption width. */
+  display: inline;
 
   /* Typography (mirrors .cap-word, parallel tokens). */
   font-family: var(--cap-author-font-family);
