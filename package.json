@@ -1,6 +1,6 @@
 {
   "name": "capicola",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A TikTok/CapCut-style narrated, word-by-word caption component for React, pinned to an anchor element.",
   "type": "module",
   "author": "Michael Gamble",

@@ -18,6 +18,7 @@
   --cap-font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
   --cap-font-weight: 900; /* Barlow Condensed imports 400/600/700/900 — 900 avoids faux-bold + matches the heavy reference */
   --cap-font-size: 30px;
+  --cap-line-height: 1.25; /* roomy enough that tall caps + stroke + shadow don't clip */
   --cap-letter-spacing: 0.02em;
   --cap-text-transform: uppercase;
   --cap-text-color: #ffffff;
@@ -75,6 +76,7 @@
   --cap-author-font-family: var(--cap-font-family);
   --cap-author-font-weight: 600; /* lighter than the heavy quote body */
   --cap-author-font-size: 19px; /* smaller than the quote body */
+  --cap-author-line-height: var(--cap-line-height);
   --cap-author-letter-spacing: var(--cap-letter-spacing);
   --cap-author-text-transform: none;
   --cap-author-text-color: var(--cap-text-color);
@@ -200,7 +202,7 @@
   text-transform: var(--cap-text-transform);
   color: var(--cap-text-color);
   /* Roomy enough that tall caps + the stroke + drop shadow don't clip vertically. */
-  line-height: 1.25;
+  line-height: var(--cap-line-height);
 
   /*
    * Outline via a real vector stroke (-webkit-text-stroke), NOT stacked
@@ -298,7 +300,7 @@
   letter-spacing: var(--cap-author-letter-spacing);
   text-transform: var(--cap-author-text-transform);
   color: var(--cap-author-text-color);
-  line-height: 1.25;
+  line-height: var(--cap-author-line-height);
 
   /* Vector stroke + soft drop shadow, identical technique to .cap-word. */
   -webkit-text-stroke-width: calc(var(--cap-author-stroke-width) * 2);

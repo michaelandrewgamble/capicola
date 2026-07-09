@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2]
+
+### Added
+
+- **`lineHeight` theme token** — a unitless line-height multiplier (default `1.25`)
+  on `CaptionTheme`, mapping to `--cap-line-height` (and `--cap-author-line-height`
+  for the quote author). Tighten multi-line quotes or loosen airy captions; the
+  author's line-height tunes independently. Exposed as Storybook controls ("line
+  height" + "author line height").
+- **`balance` option** — balance wrapped lines to the narrowest width that keeps the
+  same line count, so multi-line text breaks into even lines with no orphan word (the
+  react-wrap-balancer effect, applied to the flex word track; measured off-screen on a
+  clone, so no flicker). In **quote mode** it is also **sentence-aware** — each sentence
+  starts on its own line, so a word never strands onto a line belonging to another
+  sentence. Available on `<Capicola balance>`, `createCapicola({ balance })`, and
+  `<capicola-caption balance>`, plus a Storybook toggle. Needs a resolved `width`
+  (`number` | `"parent"`); default `false`.
+
 ## [0.2.1]
 
 Docs and Storybook only — the library API and runtime are unchanged from `0.2.0`.

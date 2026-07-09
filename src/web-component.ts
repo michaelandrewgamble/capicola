@@ -48,6 +48,7 @@ const OBSERVED = [
   "preset",
   "width",
   "align",
+  "balance",
   "anchor-x",
   "anchor-y",
   "offset",
@@ -73,6 +74,13 @@ function parseWidth(v: string): CaptionWidth {
   if (v === "auto" || v === "parent") return v
   const n = Number(v)
   return Number.isFinite(n) ? n : "auto"
+}
+
+/** Boolean attribute: absent → undefined (engine default); present → true unless
+ *  explicitly "false"/"0" (so a bare `balance` / `open` attribute reads as true). */
+function parseBoolAttr(v: string | null): boolean | undefined {
+  if (v === null) return undefined
+  return v !== "false" && v !== "0"
 }
 
 /** Boolean attribute: absent → undefined (engine default true); "false"/"0" → false. */
@@ -241,6 +249,7 @@ export class CapicolaCaption extends Base {
       placement,
       preset: attr("preset") as CaptionPreset | undefined,
       align: attr("align") as CaptionAlign | undefined,
+      balance: parseBoolAttr(this.getAttribute("balance")),
       anchorX: attr("anchor-x") as AnchorX | undefined,
       anchorY: attr("anchor-y") as AnchorY | undefined,
       width: width === null ? undefined : parseWidth(width),

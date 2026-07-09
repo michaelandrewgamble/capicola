@@ -162,6 +162,7 @@ export function createCapicola(
       themeVars,
       authorVars,
       resolvedBoxWidth: resolvedBoxWidth(),
+      balance: o.balance ?? false,
       align: align(),
       resolvedWords,
       chunkStartIndex: chunk.startIndex,
@@ -182,6 +183,13 @@ export function createCapicola(
     if (!prevState) renderer.build(next)
     else renderer.update(prevState, next)
     prevState = next
+  }
+
+  /** Re-run line balancing on the visible track (no-op unless `balance` + fonts ready).
+   *  Called after any change to the wrapped content, width, or font. */
+  function rebalance(): void {
+    if (!renderer || !fontReady || !(o.balance ?? false)) return
+    renderer.balance(prevState ?? buildRendererState())
   }
 
   // ── font targets (mirror capicola.tsx's target computation) ─────────────────
@@ -335,6 +343,7 @@ export function createCapicola(
     recomputeChunks()
     recomputeChunkIdx()
     commit()
+    rebalance()
     driveQuoteSweep()
     scheduleDwell()
   }
@@ -380,6 +389,7 @@ export function createCapicola(
     recomputeChunks()
     recomputeChunkIdx()
     commit()
+    rebalance()
     measureCaptionHeight()
     positionAndReveal()
   }
@@ -528,6 +538,7 @@ export function createCapicola(
     recomputeChunks()
     recomputeChunkIdx()
     commit()
+    rebalance()
     measureCaptionHeight()
     positionAndReveal()
     // Now that the caption is revealed, start the sweep from the first word —
@@ -611,6 +622,7 @@ export function createCapicola(
       recomputeChunkIdx()
       commit()
     }
+    rebalance()
     measureCaptionHeight()
     positionAndReveal()
 

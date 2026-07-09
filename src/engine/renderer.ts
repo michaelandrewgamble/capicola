@@ -24,6 +24,8 @@ export interface RendererState {
 
   /** Resolved numeric box width (px), or undefined to hug content. */
   resolvedBoxWidth?: number
+  /** Balance wrapped lines to the narrowest width that keeps the same line count. */
+  balance: boolean
   /** Horizontal alignment within the box. */
   align: CaptionAlign
 
@@ -82,6 +84,14 @@ export interface Renderer {
   applyPosition: (pos: ComputePositionResult, visible: boolean) => void
   /** Read the real per-word widths + gap from the hidden measure row. */
   measure: () => RendererMeasurement
+  /**
+   * Constrain the visible track to the narrowest width that keeps its current line
+   * count (react-wrap-balancer's algorithm, on the flex word track) so wrapped lines
+   * are even with no orphan. Measures off-screen on a clone (no flicker). No-op unless
+   * `state.balance` + a resolved box width + the track wraps to >1 line. Must run after
+   * the track is attached and fonts are ready.
+   */
+  balance: (state: RendererState) => void
   /** The current rendered height of the root (for `auto` collision flipping). */
   getHeight: () => number
   /** Remove the root from the DOM and drop all references. */
@@ -114,6 +124,23 @@ function makeWordSpan(
   if (ariaHidden) span.setAttribute("aria-hidden", "true")
   span.textContent = text
   return span
+}
+
+/** A word ends a sentence when it closes with `.`/`!`/`?` (allowing a trailing
+ *  quote/bracket). Heuristic — good enough for prose; abbreviations are rare in quotes. */
+function endsSentence(text: string): boolean {
+  return /[.!?]["'”’)\]]?$/.test(text)
+}
+
+/** A zero-height, full-width flex item — forces the next word onto a new line in the
+ *  wrapping track (used for sentence-aware breaking when `balance` is on). */
+function makeLineBreak(): HTMLSpanElement {
+  const br = document.createElement("span")
+  br.className = "cap-line-break"
+  br.setAttribute("aria-hidden", "true")
+  br.style.flex = "0 0 100%"
+  br.style.height = "0"
+  return br
 }
 
 /**
@@ -257,11 +284,18 @@ export function createRenderer(): Renderer {
     if (state.isQuote && state.openQuoteMark !== "") {
       track.appendChild(makeWordSpan(state.openQuoteMark, false, true))
     }
+    // Sentence-aware breaking (balance, quote mode, wrapped): start each sentence on
+    // its own line so a word never strands onto a line with a different sentence.
+    const breakSentences =
+      state.balance && state.isQuote && state.resolvedBoxWidth !== undefined
     state.chunkWords.forEach((word, i) => {
       const globalIndex = state.chunkStartIndex + i
       const span = makeWordSpan(word.text, globalIndex === state.activeIndex, false)
       wordSpans.set(globalIndex, span)
       track.appendChild(span)
+      if (breakSentences && i < state.chunkWords.length - 1 && endsSentence(word.text)) {
+        track.appendChild(makeLineBreak())
+      }
     })
     if (state.isQuote && state.closeQuoteMark !== "") {
       track.appendChild(makeWordSpan(state.closeQuoteMark, false, true))
@@ -447,6 +481,68 @@ export function createRenderer(): Renderer {
     return rootEl.getBoundingClientRect().height
   }
 
+  /** react-wrap-balancer's core, applied to the flex word track: binary-search the
+   *  narrowest track width that keeps the current line count, so wrapped lines are
+   *  even (no orphan). Measures on an off-screen clone → no visible reflow/flicker. */
+  function balance(state: RendererState): void {
+    if (!trackEl) return
+    // Always clear a prior balance first (so toggling off / re-measuring is clean).
+    trackEl.style.removeProperty("max-width")
+    const available = state.resolvedBoxWidth
+    if (!state.balance || available === undefined) return
+
+    if (!trackEl.querySelector(".cap-word")) return
+
+    // Off-screen clone at full width → natural line count. Kept in the same parent so
+    // it inherits the caption's font tokens; absolute + off-screen so it never paints.
+    const host = trackEl.parentElement ?? rootEl
+    const clone = trackEl.cloneNode(true) as HTMLElement
+    clone.setAttribute("aria-hidden", "true")
+    Object.assign(clone.style, {
+      position: "absolute",
+      visibility: "hidden",
+      pointerEvents: "none",
+      top: "0",
+      left: "-99999px",
+      maxWidth: "none",
+      width: `${available}px`,
+    })
+    host.appendChild(clone)
+
+    // Count text lines by distinct word rows — including the quote-mark spans (also
+    // `.cap-word`) so the balancer never narrows so far that the closing mark is
+    // stranded on its own line. Robust to the zero-height sentence break spacers,
+    // which are `.cap-line-break` (a different class) and so aren't counted.
+    const linesAt = (w: number): number => {
+      clone.style.width = `${w}px`
+      const tops = new Set<number>()
+      clone
+        .querySelectorAll<HTMLElement>(".cap-word")
+        .forEach((el) => tops.add(Math.round(el.offsetTop)))
+      return Math.max(1, tops.size)
+    }
+
+    const lines = linesAt(available)
+    if (lines <= 1) {
+      clone.remove()
+      return
+    }
+    // Narrowest width that still fits in `lines` lines (below it, an extra line appears).
+    let lo = 0
+    let hi = available
+    let best = available
+    for (let i = 0; i < 14; i++) {
+      const mid = (lo + hi) / 2
+      if (linesAt(mid) > lines) lo = mid
+      else {
+        best = mid
+        hi = mid
+      }
+    }
+    clone.remove()
+    trackEl.style.maxWidth = `${Math.ceil(best)}px`
+  }
+
   function destroy(): void {
     if (destroyed) return
     destroyed = true
@@ -471,6 +567,7 @@ export function createRenderer(): Renderer {
     applyPosition,
     measure,
     getHeight,
+    balance,
     destroy,
   }
 }

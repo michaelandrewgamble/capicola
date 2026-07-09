@@ -333,6 +333,7 @@ type Args = {
   fontFamily: string
   fontWeight: number
   fontSizePx: number
+  lineHeight: number
   textColor: string
   fontOpacity: number
   strokeColor: string
@@ -370,6 +371,7 @@ type Args = {
   anchorY: "top" | "middle" | "bottom" | "auto"
   width: "auto" | "parent" | number
   align: "left" | "center" | "right"
+  balance: boolean
   // Quote  (mode="quote" reel + placement axis + author styling)
   // NB: `quoteMode`/`quotePlacement` keys avoid colliding with the chunking `mode`
   //     arg; the argTypes `name` labels display them as "mode"/"placement".
@@ -385,6 +387,7 @@ type Args = {
   authorFontWeight: number
   authorColor: string
   authorFontSizePx: number
+  authorLineHeight: number
   authorTextTransform: "uppercase" | "none" | "lowercase" | "capitalize"
 }
 
@@ -416,6 +419,7 @@ function buildAppearance(a: Args): CaptionTheme {
     fontFamily: `'${a.fontFamily}', sans-serif`,
     fontWeight: a.fontWeight,
     fontSizePx: a.fontSizePx,
+    lineHeight: a.lineHeight,
     textTransform: a.textTransform,
     textColor: withOpacity(a.textColor, a.fontOpacity),
     strokeColor: withOpacity(a.strokeColor, a.strokeOpacity),
@@ -451,6 +455,7 @@ function buildAuthorAppearance(a: Args): CaptionTheme {
     fontFamily: `'${a.authorFontFamily}', sans-serif`,
     fontWeight: a.authorFontWeight,
     fontSizePx: a.authorFontSizePx,
+    lineHeight: a.authorLineHeight,
     textTransform: a.authorTextTransform,
     textColor: a.authorColor,
   }
@@ -490,7 +495,7 @@ function usageSnippet(a: Args): string {
     "  open={open}",
     "  anchorRef={ref}",
     '  text="…"',
-    `  anchorX=${fmt(a.anchorX)} anchorY=${fmt(a.anchorY)} width={${fmt(a.width)}} align=${fmt(a.align)}`,
+    `  anchorX=${fmt(a.anchorX)} anchorY=${fmt(a.anchorY)} width={${fmt(a.width)}} align=${fmt(a.align)}${a.balance ? " balance" : ""}`,
     `  cadence={${inline(cadence)}}`,
     `  chunking={${inline(chunking)}}`,
     ...styleLines,
@@ -538,6 +543,7 @@ function PlaygroundDemo({
             anchorY={a.anchorY}
             width={a.width}
             align={a.align}
+            balance={a.balance}
             cadence={{
               style: a.style,
               cps: a.cps,
@@ -642,6 +648,7 @@ const STYLE_KEYS = [
   "fontFamily",
   "fontWeight",
   "fontSizePx",
+  "lineHeight",
   "textColor",
   "fontOpacity",
   "strokeColor",
@@ -704,6 +711,7 @@ function presetToArgs(preset: CaptionPreset): Partial<Args> {
     fontFamily: PRESET_FONTS[preset].fontFamily,
     fontWeight: PRESET_FONTS[preset].fontWeight,
     fontSizePx: t.fontSizePx ?? 30,
+    lineHeight: t.lineHeight ?? 1.25,
     letterSpacingEm: t.letterSpacingEm ?? 0.02,
     wordGapEm: t.wordGapEm ?? 0.62,
     textTransform: t.textTransform ?? "uppercase",
@@ -753,6 +761,7 @@ export const Playground: StoryObj<
     fontFamily: "Barlow Condensed",
     fontWeight: 900,
     fontSizePx: 30,
+    lineHeight: 1.25,
     textColor: "#ffffff",
     fontOpacity: 1,
     strokeColor: "#000000",
@@ -780,6 +789,7 @@ export const Playground: StoryObj<
     gapThreshold: 0.5,
     breakOnPunctuation: true,
     anchorX: "center",
+    balance: false,
     anchorY: "top",
     width: "auto",
     align: "center",
@@ -798,6 +808,7 @@ export const Playground: StoryObj<
     authorFontWeight: 600,
     authorColor: "#ffffff",
     authorFontSizePx: 18,
+    authorLineHeight: 1.25,
     authorTextTransform: "none",
   },
   argTypes: {
@@ -829,6 +840,7 @@ export const Playground: StoryObj<
       step: 100,
     }),
     fontSizePx: styleArg("font size", { type: "range", min: 14, max: 64, step: 1 }),
+    lineHeight: styleArg("line height", { type: "range", min: 0.8, max: 2, step: 0.05 }),
     textTransform: {
       name: "text transform",
       control: "select",
@@ -951,6 +963,11 @@ export const Playground: StoryObj<
       options: ["left", "center", "right"],
       ...cat("Layout"),
     },
+    balance: {
+      name: "balance",
+      control: "boolean",
+      ...cat("Layout"),
+    },
     // Cadence (last)
     style: {
       control: "inline-radio",
@@ -991,6 +1008,11 @@ export const Playground: StoryObj<
     authorFontSizePx: {
       name: "author size",
       control: { type: "range", min: 10, max: 40, step: 1 },
+      ...cat("Quote"),
+    },
+    authorLineHeight: {
+      name: "author line height",
+      control: { type: "range", min: 0.8, max: 2, step: 0.05 },
       ...cat("Quote"),
     },
     authorTextTransform: {

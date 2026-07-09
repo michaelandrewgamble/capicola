@@ -133,6 +133,9 @@ export interface CaptionTheme {
   fontFamily?: string
   fontWeight?: number | string
   fontSizePx?: number
+  /** Unitless line-height multiplier (e.g. `1.25`). Controls the gap between
+   *  wrapped lines — tighten for multi-line quotes, loosen for airy captions. */
+  lineHeight?: number
   letterSpacingEm?: number
   textTransform?: "uppercase" | "none" | "lowercase" | "capitalize"
   textColor?: string
@@ -276,6 +279,16 @@ export interface CapicolaOptions {
   width?: CaptionWidth
   /** Horizontal alignment of the text within the box when it's wider than the content. Default "center". */
   align?: CaptionAlign
+  /**
+   * Balance wrapped lines: constrain the caption to the narrowest width that keeps
+   * the same line count, so multi-line text breaks into even lines with no orphan
+   * word on the last line (the react-wrap-balancer effect, applied to the word
+   * track). In quote mode it is also sentence-aware — each sentence starts on its
+   * own line, so a word never strands onto a line belonging to another sentence.
+   * Needs a resolved box width (`width` = `number` | `"parent"`); a no-op for
+   * single-line captions. Default `false`.
+   */
+  balance?: boolean
   /** Horizontal anchor position relative to the target. Default "center". */
   anchorX?: AnchorX
   /** Vertical anchor position relative to the target (above / over / below). Default "top". */

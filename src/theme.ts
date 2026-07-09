@@ -121,6 +121,7 @@ export function themeToVars(theme: CaptionTheme, prefix = "cap"): Record<string,
   if (theme.fontFamily !== undefined) vars[`${p}-font-family`] = theme.fontFamily
   if (theme.fontWeight !== undefined) vars[`${p}-font-weight`] = String(theme.fontWeight)
   if (theme.fontSizePx !== undefined) vars[`${p}-font-size`] = `${theme.fontSizePx}px`
+  if (theme.lineHeight !== undefined) vars[`${p}-line-height`] = String(theme.lineHeight)
   if (theme.letterSpacingEm !== undefined)
     vars[`${p}-letter-spacing`] = `${theme.letterSpacingEm}em`
   if (theme.textTransform !== undefined) vars[`${p}-text-transform`] = theme.textTransform

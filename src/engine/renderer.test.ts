@@ -21,6 +21,7 @@ function makeState(overrides: Partial<RendererState> = {}): RendererState {
     themeVars: { "--cap-font-size": "30px" },
     authorVars: {},
     resolvedBoxWidth: undefined,
+    balance: false,
     align: "center",
     resolvedWords: chunkWords,
     chunkStartIndex: 0,

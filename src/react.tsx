@@ -59,6 +59,10 @@ export interface CapicolaProps {
   width?: CaptionWidth
   /** Horizontal alignment of the text within the box when it's wider than the content. Default "center". */
   align?: CaptionAlign
+  /** Balance wrapped lines to the narrowest width that keeps the same line count (even
+   *  lines, no orphan word); in quote mode it also starts each sentence on its own line.
+   *  Needs a resolved `width` (`number` | `"parent"`). Default `false`. */
+  balance?: boolean
   /** Horizontal anchor position relative to the target. Default "center". */
   anchorX?: AnchorX
   /** Vertical anchor position relative to the target (above / over / below). Default "top". */
