@@ -1,6 +1,6 @@
 {
-  "name": "capicola",
-  "version": "0.2.3",
+  "name": "@michaelandrewgamble/capicola",
+  "version": "0.2.4",
   "description": "A TikTok/CapCut-style narrated, word-by-word caption component for React, pinned to an anchor element.",
   "type": "module",
   "author": "Michael Gamble",
@@ -80,7 +80,6 @@
     "format:check": "prettier --check .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "prepare": "pnpm run build",
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {

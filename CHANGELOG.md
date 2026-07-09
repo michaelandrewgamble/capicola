@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4]
+
+### Fixed
+
+- **No build runs on a consumer's install (removes a fork-bomb hazard for git
+  installs).** `package.json` had `"prepare": "pnpm run build"`, so installing capicola
+  from git (`github:michaelandrewgamble/capicola#…`) or a tarball forced a build on the
+  consumer's machine. To build a git dependency pnpm extracts it into a temp dir under
+  its store and runs a **nested** `pnpm install` there for capicola's build devDeps. When
+  that store resolves _inside_ the consumer's workspace — the normal case in Docker
+  (overlayfs `HOME` vs a mounted project volume), CI, or with an in-repo store — the
+  nested install walks up, finds the consumer's `pnpm-workspace.yaml`, re-installs the
+  whole workspace, and re-triggers the build → an infinitely recursing install that pegs
+  CPU/memory until killed. The `prepare` script is removed; the built `dist/` now ships
+  only in the published npm tarball (built by `prepublishOnly` and the release workflow).
+  Consumers should install from npm with a semver range
+  (`"@michaelandrewgamble/capicola": "^0.2.4"`) rather than a `github:` ref. No API or
+  runtime changes.
+
+  Published to npm as **`@michaelandrewgamble/capicola`** — the unscoped `capicola` name
+  was unpublished in 2024 and npm does not permit reusing it.
+
 ## [0.2.3]
 
 ### Fixed
